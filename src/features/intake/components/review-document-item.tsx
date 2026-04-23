@@ -8,10 +8,10 @@ export function ReviewDocumentItem({ item }: { item: ReviewItem }) {
 
 	return (
 		<Card className="rounded-3xl border border-slate-200 shadow-none">
-			<CardContent className="px-5 py-1 space-y-3">
+			<CardContent className="space-y-3 px-5 py-1">
 				<div className="flex items-start justify-between gap-3">
 					<div>
-						<div className="flex items-center gap-2 flex-wrap">
+						<div className="flex flex-wrap items-center gap-2">
 							<p className="text-sm font-medium text-slate-900">{item.label}</p>
 							{item.required ? (
 								<Badge variant="mandatory" className="rounded-full text-[10px]">
@@ -47,9 +47,9 @@ export function ReviewDocumentItem({ item }: { item: ReviewItem }) {
 
 				{!item.skipped && item.fileNames.length > 0 ? (
 					<div className="space-y-2 rounded-2xl bg-slate-50 p-3">
-						{item.fileNames.map((fileName) => (
+						{item.fileNames.map((fileName, index) => (
 							<div
-								key={`${item.id}-${fileName}`}
+								key={`${item.id}-${fileName}-${index}`}
 								className="flex items-center gap-2 text-xs text-slate-700"
 							>
 								<FileText className="h-4 w-4 text-slate-400" />

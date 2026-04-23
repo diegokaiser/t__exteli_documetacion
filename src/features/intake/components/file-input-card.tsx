@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConditionalField } from "@/features/intake/types/wizard.types";
-import { AlertCircle, FileText, FileWarning, X } from "lucide-react";
+import { AlertCircle, FileWarning, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const colors = {
@@ -100,6 +100,7 @@ export function FileInputCard({
 	files = [],
 	onFilesChange,
 	onClearFiles,
+	onRemoveFile,
 	showRequiredWarning = false,
 }: {
 	field: ConditionalField;
@@ -109,6 +110,7 @@ export function FileInputCard({
 	files?: SelectedFile[];
 	onFilesChange?: (files: FileList | null) => void;
 	onClearFiles?: () => void;
+	onRemoveFile?: (index: number) => void;
 	showRequiredWarning?: boolean;
 }) {
 	const [error, setError] = useState("");
@@ -154,24 +156,37 @@ export function FileInputCard({
 				<div className="flex items-start justify-between gap-3">
 					<div>
 						<div className="flex flex-wrap items-center gap-2">
-							<p className="text-sm font-medium text-slate-900">
+							<p
+								className={`text-sm font-medium text-slate-900 ${skipped ? "line-through" : ""}`}
+							>
 								{field.label}
 							</p>
-							{field.required ? (
-								<Badge variant="mandatory" className="rounded-full text-[10px]">
-									Obligatorio
-								</Badge>
-							) : (
-								<Badge
-									variant="optional"
-									className="rounded-full border-slate-200 text-[10px] text-slate-500"
-								>
-									Opcional
-								</Badge>
+							{!skipped && (
+								<>
+									{field.required ? (
+										<Badge
+											variant="mandatory"
+											className="rounded-full text-[10px]"
+										>
+											Obligatorio
+										</Badge>
+									) : (
+										<Badge
+											variant="optional"
+											className="rounded-full border-slate-200 text-[10px] text-slate-500"
+										>
+											Opcional
+										</Badge>
+									)}
+								</>
 							)}
 						</div>
 
-						<p className="mt-1 text-xs leading-5 text-slate-500">
+						<p
+							className={`mt-1 text-xs leading-5 text-slate-500 ${
+								skipped ? "line-through" : ""
+							}`}
+						>
 							{field.hint}
 						</p>
 
@@ -186,7 +201,9 @@ export function FileInputCard({
 				{field.optionalToggle ? (
 					<div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-3">
 						<p className="text-sm text-slate-700">
-							¿No dispones de este documento?
+							{skipped
+								? "¿Tienes este documento?"
+								: "¿No dispones de este documento?"}
 						</p>
 						<Button
 							type="button"
@@ -200,7 +217,7 @@ export function FileInputCard({
 							onClick={onToggleSkip}
 							disabled={disabled}
 						>
-							{field.optionalToggle}
+							{skipped ? "Sí tengo" : field.optionalToggle}
 						</Button>
 					</div>
 				) : null}
@@ -250,21 +267,27 @@ export function FileInputCard({
 
 						{files.length > 0 ? (
 							<div className="mt-3 space-y-2">
-								{files.map((file) => (
+								{files.map((file, index) => (
 									<div
-										key={`${field.id}-${file.name}`}
+										key={`${field.id}-${file.name}-${index}`}
 										className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-xs text-slate-700"
 									>
-										<div className="flex items-center gap-2">
-											<FileText className="h-4 w-4" />
-											<span className="truncate pr-3">{file.name}</span>
-										</div>
+										<span className="truncate pr-3">{file.name}</span>
 
-										{onClearFiles ? (
+										{onRemoveFile ? (
+											<button
+												type="button"
+												onClick={() => onRemoveFile(index)}
+												className="shrink-0 text-slate-400 hover:text-slate-700"
+												aria-label={`Eliminar archivo ${file.name}`}
+											>
+												<X className="h-4 w-4" />
+											</button>
+										) : onClearFiles ? (
 											<button
 												type="button"
 												onClick={handleClearFiles}
-												className="shrink-0 text-slate-400 hover:text-slate-700 cursor-pointer"
+												className="shrink-0 text-slate-400 hover:text-slate-700"
 												aria-label="Eliminar archivo"
 											>
 												<X className="h-4 w-4" />

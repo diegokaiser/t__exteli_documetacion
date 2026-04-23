@@ -8,12 +8,14 @@ export function WizardStepComplementary({
 	files,
 	onFilesChange,
 	onClearFiles,
+	onRemoveFile,
 	showValidation,
 }: {
 	age: PersonalAge;
 	files: Record<string, UploadedFileItem[]>;
 	onFilesChange: (fieldId: string, files: FileList | null) => void;
 	onClearFiles: (fieldId: string) => void;
+	onRemoveFile: (fieldId: string, index: number) => void;
 	showValidation: boolean;
 }) {
 	if (!age) return null;
@@ -36,6 +38,7 @@ export function WizardStepComplementary({
 						showRequiredWarning={showRequiredWarning}
 						onFilesChange={(selected) => onFilesChange(field.id, selected)}
 						onClearFiles={() => onClearFiles(field.id)}
+						onRemoveFile={(index) => onRemoveFile(field.id, index)}
 					/>
 				);
 			})}

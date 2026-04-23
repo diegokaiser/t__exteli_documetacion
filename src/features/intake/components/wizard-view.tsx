@@ -14,6 +14,10 @@ import {
 	personalDocuments,
 } from "@/features/intake/config/wizard.config";
 import { useWizardDraft } from "@/features/intake/hooks/use-wizard-draft";
+import {
+	getVisibleLaborFields,
+	shouldShowVulnerability,
+} from "@/features/intake/utils/labor-rules";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export function WizardView({
@@ -27,33 +31,36 @@ export function WizardView({
 	const [attemptedNextByStep, setAttemptedNextByStep] = useState<
 		Record<number, boolean>
 	>({});
-	const { draft, setAge, setAsylum, setSkip, setFiles, clearFile } =
-		useWizardDraft();
 
-	const [adultNonAsylumSkips, setAdultNonAsylumSkips] = useState(draft.skipped);
+	const {
+		draft,
+		setAge,
+		setAsylum,
+		setSkipped,
+		setFiles,
+		clearFile,
+		clearFiles,
+		removeFile,
+	} = useWizardDraft();
+
+	const headerRef = useRef<HTMLDivElement | null>(null);
+	const isFirstStepRender = useRef(true);
+
 	const titles = [
 		"Datos personales",
 		"Datos laborales o de integración",
 		"Datos complementarios",
 	];
 
-	const headerRef = useRef<HTMLDivElement | null>(null);
-	const isFirstRender = useRef(true);
-
 	useEffect(() => {
-		setAdultNonAsylumSkips(draft.skipped);
-	}, [draft.skipped]);
-
-	useEffect(() => {
-		if (isFirstRender.current) {
-			isFirstRender.current = false;
+		if (isFirstStepRender.current) {
+			isFirstStepRender.current = false;
 			return;
 		}
 
 		headerRef.current?.scrollIntoView({
 			behavior: "smooth",
 			block: "start",
-			inline: "nearest",
 		});
 	}, [stepIndex]);
 
@@ -70,45 +77,21 @@ export function WizardView({
 		}
 
 		if (stepIndex === 1) {
-			const laborFields =
-				draft.age === "adult"
-					? draft.asylum === "yes"
-						? laborDocuments.adult.asylumYes
-						: laborDocuments.adult.asylumNo
-					: draft.asylum === "yes"
-						? laborDocuments.minor.asylumYes
-						: laborDocuments.minor.asylumNo;
+			const visibleLaborFields = getVisibleLaborFields(
+				draft.age,
+				draft.asylum,
+				draft.skipped,
+			);
 
-			const adultNonAsylumIds = [
-				"working-life-adult",
-				"precontract-adult",
-				"collective-registration-descendants",
-				"collective-registration-ascendants",
-			];
-
-			const visibleFields = laborFields.filter((field, index) => {
-				const isAdultNonAsylumChain =
-					draft.age === "adult" && draft.asylum === "no";
-				if (!isAdultNonAsylumChain) return true;
-				if (index === 0) return true;
-
-				const previousField = laborFields[index - 1];
-				return Boolean(draft.skipped[previousField.id]);
-			});
-
-			const visibleRequiredMissing = visibleFields.some((field) => {
+			const visibleRequiredMissing = visibleLaborFields.some((field) => {
 				const isSkipped = Boolean(draft.skipped[field.id]);
 				const hasFiles = (draft.files[field.id] ?? []).length > 0;
+
 				return field.required && !isSkipped && !hasFiles;
 			});
 
-			const showVulnerability =
-				draft.age === "adult" &&
-				draft.asylum === "no" &&
-				adultNonAsylumIds.every((id) => draft.skipped[id]);
-
 			const vulnerabilityMissing =
-				showVulnerability &&
+				shouldShowVulnerability(draft.age, draft.asylum, draft.skipped) &&
 				Boolean(laborDocuments.adult.vulnerability.required) &&
 				(draft.files[laborDocuments.adult.vulnerability.id] ?? []).length === 0;
 
@@ -163,6 +146,7 @@ export function WizardView({
 						files={draft.files}
 						onFilesChange={setFiles}
 						onClearFiles={clearFile}
+						onRemoveFile={removeFile}
 						showValidation={currentStepAttempted}
 					/>
 				) : null}
@@ -172,20 +156,13 @@ export function WizardView({
 						age={draft.age}
 						asylum={draft.asylum}
 						setAsylum={setAsylum}
-						adultNonAsylumSkips={adultNonAsylumSkips}
-						setAdultNonAsylumSkips={(updater) => {
-							setAdultNonAsylumSkips((prev) => {
-								const next =
-									typeof updater === "function" ? updater(prev) : updater;
-								Object.entries(next).forEach(([fieldId, value]) =>
-									setSkip(fieldId, Boolean(value)),
-								);
-								return next;
-							});
-						}}
+						skipped={draft.skipped}
+						setSkipped={setSkipped}
+						clearFiles={clearFiles}
 						files={draft.files}
 						onFilesChange={setFiles}
 						onClearFiles={clearFile}
+						onRemoveFile={removeFile}
 						showValidation={currentStepAttempted}
 					/>
 				) : null}
@@ -196,6 +173,7 @@ export function WizardView({
 						files={draft.files}
 						onFilesChange={setFiles}
 						onClearFiles={clearFile}
+						onRemoveFile={removeFile}
 						showValidation={currentStepAttempted}
 					/>
 				) : null}

@@ -5,6 +5,10 @@ import {
 } from "@/features/intake/config/wizard.config";
 import type { WizardDraft } from "@/features/intake/hooks/use-wizard-draft";
 import type { ConditionalField } from "@/features/intake/types/wizard.types";
+import {
+	getVisibleLaborFields,
+	shouldShowVulnerability,
+} from "@/features/intake/utils/labor-rules";
 
 export type ReviewItem = {
 	id: string;
@@ -42,28 +46,17 @@ export function buildReviewSections(draft: WizardDraft): ReviewSectionData[] {
 		mapField(field, draft),
 	);
 
-	const laborBase =
-		draft.age === "adult"
-			? draft.asylum === "yes"
-				? laborDocuments.adult.asylumYes
-				: laborDocuments.adult.asylumNo
-			: draft.asylum === "yes"
-				? laborDocuments.minor.asylumYes
-				: laborDocuments.minor.asylumNo;
+	const labor = getVisibleLaborFields(
+		draft.age,
+		draft.asylum,
+		draft.skipped,
+	).map((field) => mapField(field, draft));
 
-	const labor = laborBase.map((field) => mapField(field, draft));
-
-	const shouldShowVulnerability =
-		draft.age === "adult" &&
-		draft.asylum === "no" &&
-		[
-			"working-life-adult",
-			"precontract-adult",
-			"collective-registration-descendants",
-			"collective-registration-ascendants",
-		].every((id) => draft.skipped[id]);
-
-	const laborItems = shouldShowVulnerability
+	const laborItems = shouldShowVulnerability(
+		draft.age,
+		draft.asylum,
+		draft.skipped,
+	)
 		? [...labor, mapField(laborDocuments.adult.vulnerability, draft)]
 		: labor;
 

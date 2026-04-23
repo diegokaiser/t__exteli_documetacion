@@ -29,6 +29,8 @@ const defaultDraft: WizardDraft = {
 		"working-life-adult": false,
 		"precontract-adult": false,
 		"collective-registration-descendants": false,
+		"collective-registration-descendants-disability": false,
+		"collective-certificate-descendants-disability": false,
 		"collective-registration-ascendants": false,
 	},
 	files: {},
@@ -46,6 +48,10 @@ export function useWizardDraft() {
 				setDraft({
 					...defaultDraft,
 					...JSON.parse(raw),
+					skipped: {
+						...defaultDraft.skipped,
+						...(JSON.parse(raw).skipped ?? {}),
+					},
 				});
 			}
 		} catch {
@@ -87,19 +93,14 @@ export function useWizardDraft() {
 				}));
 			},
 
-			resetSkipsFrom: (fieldIds: string[], startIndex: number) => {
-				setDraft((prev) => {
-					const next = { ...prev.skipped };
-
-					for (let i = startIndex; i < fieldIds.length; i += 1) {
-						next[fieldIds[i]] = false;
-					}
-
-					return {
-						...prev,
-						skipped: next,
-					};
-				});
+			setSkipped: (nextSkipped: Record<string, boolean>) => {
+				setDraft((prev) => ({
+					...prev,
+					skipped: {
+						...prev.skipped,
+						...nextSkipped,
+					},
+				}));
 			},
 
 			setFiles: (fieldId: string, files: FileList | null) => {
@@ -128,6 +129,37 @@ export function useWizardDraft() {
 						[fieldId]: [],
 					},
 				}));
+			},
+
+			clearFiles: (fieldIds: string[]) => {
+				setDraft((prev) => {
+					const nextFiles = { ...prev.files };
+
+					fieldIds.forEach((fieldId) => {
+						nextFiles[fieldId] = [];
+					});
+
+					return {
+						...prev,
+						files: nextFiles,
+					};
+				});
+			},
+
+			removeFile: (fieldId: string, index: number) => {
+				setDraft((prev) => {
+					const currentFiles = prev.files[fieldId] ?? [];
+
+					return {
+						...prev,
+						files: {
+							...prev.files,
+							[fieldId]: currentFiles.filter(
+								(_, currentIndex) => currentIndex !== index,
+							),
+						},
+					};
+				});
 			},
 
 			markSubmitted: () => {

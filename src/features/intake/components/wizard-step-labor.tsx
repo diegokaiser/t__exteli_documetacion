@@ -8,57 +8,52 @@ import {
 	AsylumStatus,
 	PersonalAge,
 } from "@/features/intake/types/wizard.types";
+import {
+	getFilesToClearForAdultNonAsylumToggle,
+	getNextSkippedStateForAdultNonAsylum,
+	getVisibleLaborFields,
+	shouldShowVulnerability,
+} from "@/features/intake/utils/labor-rules";
 import { AlertCircle } from "lucide-react";
 
 const colors = {
 	navy: "#0D3B66",
 };
 
+const DISABILITY_REGISTRATION_ID =
+	"collective-registration-descendants-disability";
+const DISABILITY_CERTIFICATE_ID =
+	"collective-certificate-descendants-disability";
+
 export function WizardStepLabor({
 	age,
 	asylum,
 	setAsylum,
-	adultNonAsylumSkips,
-	setAdultNonAsylumSkips,
+	skipped,
+	setSkipped,
+	clearFiles,
 	files,
 	onFilesChange,
 	onClearFiles,
+	onRemoveFile,
 	showValidation,
 }: {
 	age: PersonalAge;
 	asylum: AsylumStatus;
 	setAsylum: (value: AsylumStatus) => void;
-	adultNonAsylumSkips: Record<string, boolean>;
-	setAdultNonAsylumSkips: React.Dispatch<
-		React.SetStateAction<Record<string, boolean>>
-	>;
+	skipped: Record<string, boolean>;
+	setSkipped: (nextSkipped: Record<string, boolean>) => void;
+	clearFiles: (fieldIds: string[]) => void;
 	files: Record<string, UploadedFileItem[]>;
 	onFilesChange: (fieldId: string, files: FileList | null) => void;
 	onClearFiles: (fieldId: string) => void;
+	onRemoveFile: (fieldId: string, index: number) => void;
 	showValidation: boolean;
 }) {
 	if (!age) return null;
 
-	const laborFields =
-		age === "adult"
-			? asylum === "yes"
-				? laborDocuments.adult.asylumYes
-				: laborDocuments.adult.asylumNo
-			: asylum === "yes"
-				? laborDocuments.minor.asylumYes
-				: laborDocuments.minor.asylumNo;
-
-	const adultNonAsylumIds = [
-		"working-life-adult",
-		"precontract-adult",
-		"collective-registration-descendants",
-		"collective-registration-ascendants",
-	];
-
-	const showVulnerabilityNotice =
-		age === "adult" &&
-		asylum === "no" &&
-		adultNonAsylumIds.every((id) => adultNonAsylumSkips[id]);
+	const laborFields = getVisibleLaborFields(age, asylum, skipped);
+	const showVulnerabilityNotice = shouldShowVulnerability(age, asylum, skipped);
 
 	return (
 		<div className="space-y-4">
@@ -74,11 +69,11 @@ export function WizardStepLabor({
 						</p>
 						<p className="mt-1 text-xs leading-5 text-slate-500">
 							Toma en cuenta que debes haber solicitado protección internacional
-							o asilo, <strong>antes del 31 de diciembre del 2025</strong>.
-							Incluso si actualmente esta en{" "}
-							<strong>trámite, denegado o en recurso</strong>.
+							o asilo, antes del 31 de diciembre del 2025. Incluso si
+							actualmente esta en trámite, denegado o en recurso.
 						</p>
 					</div>
+
 					<div className="grid grid-cols-2 gap-3">
 						<Button
 							type="button"
@@ -93,6 +88,7 @@ export function WizardStepLabor({
 						>
 							Sí
 						</Button>
+
 						<Button
 							type="button"
 							variant={asylum === "no" ? "default" : "outline"}
@@ -111,54 +107,52 @@ export function WizardStepLabor({
 			</Card>
 
 			<div className="space-y-3">
-				{laborFields.map((field, index) => {
-					const isAdultNonAsylumChain = age === "adult" && asylum === "no";
-					const previousField = index > 0 ? laborFields[index - 1] : null;
-
-					const disabled = isAdultNonAsylumChain
-						? index === 0
-							? false
-							: !adultNonAsylumSkips[previousField!.id]
-						: false;
-
+				{laborFields.map((field) => {
 					const selectedFiles = files[field.id] ?? [];
+					const isAdultNonAsylumChain =
+						age === "adult" && asylum === "no" && Boolean(field.optionalToggle);
+
+					const isDisabilityCertificateField =
+						field.id === DISABILITY_CERTIFICATE_ID;
+
+					const isDisabilityCertificateDisabled =
+						isDisabilityCertificateField &&
+						Boolean(skipped[DISABILITY_REGISTRATION_ID]);
 
 					return (
 						<FileInputCard
 							key={field.id}
 							field={field}
-							disabled={disabled}
-							skipped={adultNonAsylumSkips[field.id]}
+							disabled={isDisabilityCertificateDisabled}
+							skipped={skipped[field.id]}
 							showRequiredWarning={Boolean(
 								showValidation &&
 								field.required &&
-								!adultNonAsylumSkips[field.id] &&
+								!skipped[field.id] &&
 								selectedFiles.length === 0,
 							)}
 							onToggleSkip={
 								isAdultNonAsylumChain
-									? () =>
-											setAdultNonAsylumSkips((prev) => {
-												const next = { ...prev, [field.id]: !prev[field.id] };
-												const currentIndex = adultNonAsylumIds.indexOf(
+									? () => {
+											const nextSkipped = getNextSkippedStateForAdultNonAsylum(
+												field.id,
+												skipped,
+											);
+											const fieldIdsToClear =
+												getFilesToClearForAdultNonAsylumToggle(
 													field.id,
+													skipped,
 												);
 
-												for (
-													let i = currentIndex + 1;
-													i < adultNonAsylumIds.length;
-													i += 1
-												) {
-													next[adultNonAsylumIds[i]] = false;
-												}
-
-												return next;
-											})
+											setSkipped(nextSkipped);
+											clearFiles(fieldIdsToClear);
+										}
 									: undefined
 							}
 							files={selectedFiles}
 							onFilesChange={(selected) => onFilesChange(field.id, selected)}
 							onClearFiles={() => onClearFiles(field.id)}
+							onRemoveFile={(index) => onRemoveFile(field.id, index)}
 						/>
 					);
 				})}
@@ -171,13 +165,7 @@ export function WizardStepLabor({
 						<AlertTitle className="text-amber-900">Caso alternativo</AlertTitle>
 						<AlertDescription className="text-amber-800">
 							Si ninguna de las condiciones anteriores se cumple, solicita este
-							documento adicional.{" "}
-							<a
-								href="#"
-								className="font-semibold underline underline-offset-4"
-							>
-								Descarga el documento
-							</a>
+							documento adicional.
 						</AlertDescription>
 					</Alert>
 
@@ -194,6 +182,9 @@ export function WizardStepLabor({
 						}
 						onClearFiles={() =>
 							onClearFiles(laborDocuments.adult.vulnerability.id)
+						}
+						onRemoveFile={(index) =>
+							onRemoveFile(laborDocuments.adult.vulnerability.id, index)
 						}
 					/>
 				</>

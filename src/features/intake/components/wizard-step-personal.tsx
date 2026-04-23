@@ -15,6 +15,7 @@ export function WizardStepPersonal({
 	files,
 	onFilesChange,
 	onClearFiles,
+	onRemoveFile,
 	showValidation,
 }: {
 	age: PersonalAge;
@@ -22,6 +23,7 @@ export function WizardStepPersonal({
 	files: Record<string, UploadedFileItem[]>;
 	onFilesChange: (fieldId: string, files: FileList | null) => void;
 	onClearFiles: (fieldId: string) => void;
+	onRemoveFile: (fieldId: string, index: number) => void;
 	showValidation: boolean;
 }) {
 	const personalFields = age ? personalDocuments[age] : [];
@@ -43,7 +45,7 @@ export function WizardStepPersonal({
 						<Button
 							type="button"
 							variant={age === "adult" ? "default" : "outline"}
-							className="rounded-2xl cursor-pointer"
+							className="rounded-2xl"
 							style={
 								age === "adult"
 									? { backgroundColor: colors.navy, color: "white" }
@@ -56,7 +58,7 @@ export function WizardStepPersonal({
 						<Button
 							type="button"
 							variant={age === "minor" ? "default" : "outline"}
-							className="rounded-2xl cursor-pointer"
+							className="rounded-2xl"
 							style={
 								age === "minor"
 									? { backgroundColor: colors.navy, color: "white" }
@@ -85,6 +87,7 @@ export function WizardStepPersonal({
 							showRequiredWarning={showRequiredWarning}
 							onFilesChange={(selected) => onFilesChange(field.id, selected)}
 							onClearFiles={() => onClearFiles(field.id)}
+							onRemoveFile={(index) => onRemoveFile(field.id, index)}
 						/>
 					);
 				})}
