@@ -1,0 +1,86 @@
+# =========================
+# Node / Dependencies
+# =========================
+node_modules/
+.pnpm-store/
+.npm/
+
+# =========================
+# Next.js
+# =========================
+.next/
+out/
+build/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =========================
+# Vercel
+# =========================
+.vercel
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Appwrite (local dev / config)
+# =========================
+.appwrite/
+
+# =========================
+# Generated files (IMPORTANT for your case)
+# =========================
+uploads/
+tmp/
+temp/
+cache/
+generated/
+exports/
+zips/
+
+# PDFs y docs generados (opcional, depende de tu flujo)
+*.pdf
+*.docx
+*.zip
+
+# =========================
+# Testing
+# =========================
+coverage/
+
+# =========================
+# Misc
+# =========================
+*.pem
+*.key
