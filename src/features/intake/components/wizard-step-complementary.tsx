@@ -2,6 +2,7 @@ import { FileInputCard } from "@/features/intake/components/file-input-card";
 import { complementaryDocuments } from "@/features/intake/config/wizard.config";
 import { UploadedFileItem } from "@/features/intake/hooks/use-wizard-draft";
 import { PersonalAge } from "@/features/intake/types/wizard.types";
+import { isFileField } from "../utils/field-guards";
 
 export function WizardStepComplementary({
 	age,
@@ -25,6 +26,8 @@ export function WizardStepComplementary({
 	return (
 		<div className="space-y-3">
 			{fields.map((field) => {
+				if (!isFileField(field)) return null;
+
 				const selectedFiles = files[field.id] ?? [];
 				const showRequiredWarning = Boolean(
 					showValidation && field.required && selectedFiles.length === 0,

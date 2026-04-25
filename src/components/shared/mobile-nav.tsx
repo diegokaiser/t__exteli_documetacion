@@ -24,8 +24,8 @@ export function MobileNav({
 	] as const;
 
 	return (
-		<div className="fixed bottom-4 left-1/2 z-20 w-full max-w-md -translate-x-1/2 px-4 sm:px-0">
-			<Card className="rounded-3xl border-0 bg-white/95 shadow-xl backdrop-blur py-2">
+		<div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 sm:px-4 sm:px-0 sm:bottom-4">
+			<Card className="bg-white/95 shadow-xl backdrop-blur py-2 rounded-none sm:rounded-3xl sm:border-0">
 				<CardContent className="grid grid-cols-4 py-0 px-2">
 					{items.map((item) => {
 						const Icon = item.icon;

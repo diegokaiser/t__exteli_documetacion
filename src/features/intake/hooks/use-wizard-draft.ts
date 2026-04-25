@@ -19,6 +19,7 @@ export type WizardDraft = {
 	asylum: AsylumStatus;
 	skipped: Record<string, boolean>;
 	files: Record<string, UploadedFileItem[]>;
+	values: Record<string, string>;
 	submittedAt?: string;
 };
 
@@ -34,6 +35,7 @@ const defaultDraft: WizardDraft = {
 		"collective-registration-ascendants": false,
 	},
 	files: {},
+	values: {},
 };
 
 export function useWizardDraft() {
@@ -45,13 +47,17 @@ export function useWizardDraft() {
 			const raw = window.sessionStorage.getItem(STORAGE_KEY);
 
 			if (raw) {
+				const parsed = JSON.parse(raw);
+
 				setDraft({
 					...defaultDraft,
-					...JSON.parse(raw),
+					...parsed,
 					skipped: {
 						...defaultDraft.skipped,
-						...(JSON.parse(raw).skipped ?? {}),
+						...(parsed.skipped ?? {}),
 					},
+					files: parsed.files ?? {},
+					values: parsed.values ?? {},
 				});
 			}
 		} catch {
@@ -160,6 +166,26 @@ export function useWizardDraft() {
 						},
 					};
 				});
+			},
+
+			setValue: (fieldId: string, value: string) => {
+				setDraft((prev) => ({
+					...prev,
+					values: {
+						...prev.values,
+						[fieldId]: value,
+					},
+				}));
+			},
+
+			clearValue: (fieldId: string) => {
+				setDraft((prev) => ({
+					...prev,
+					values: {
+						...prev.values,
+						[fieldId]: "",
+					},
+				}));
 			},
 
 			markSubmitted: () => {

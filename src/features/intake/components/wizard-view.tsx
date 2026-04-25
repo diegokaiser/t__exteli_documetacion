@@ -16,6 +16,7 @@ import {
 import { useWizardDraft } from "@/features/intake/hooks/use-wizard-draft";
 import {
 	getVisibleLaborFields,
+	isEffectivelyRequiredLaborField,
 	shouldShowVulnerability,
 } from "@/features/intake/utils/labor-rules";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -38,6 +39,7 @@ export function WizardView({
 		setAsylum,
 		setSkipped,
 		setFiles,
+		setValue,
 		clearFile,
 		clearFiles,
 		removeFile,
@@ -85,9 +87,22 @@ export function WizardView({
 
 			const visibleRequiredMissing = visibleLaborFields.some((field) => {
 				const isSkipped = Boolean(draft.skipped[field.id]);
-				const hasFiles = (draft.files[field.id] ?? []).length > 0;
+				const isRequired = isEffectivelyRequiredLaborField(
+					field.id,
+					draft.age,
+					draft.asylum,
+					draft.skipped,
+				);
 
-				return field.required && !isSkipped && !hasFiles;
+				if (!isRequired || isSkipped) return false;
+
+				if (field.type === "text") {
+					const value = draft.values[field.id] ?? "";
+					return value.trim().length === 0 || !field.pattern?.test(value);
+				}
+
+				const hasFiles = (draft.files[field.id] ?? []).length > 0;
+				return !hasFiles;
 			});
 
 			const vulnerabilityMissing =
@@ -160,6 +175,8 @@ export function WizardView({
 						setSkipped={setSkipped}
 						clearFiles={clearFiles}
 						files={draft.files}
+						values={draft.values}
+						onValueChange={setValue}
 						onFilesChange={setFiles}
 						onClearFiles={clearFile}
 						onRemoveFile={removeFile}

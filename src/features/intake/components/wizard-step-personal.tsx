@@ -4,6 +4,7 @@ import { FileInputCard } from "@/features/intake/components/file-input-card";
 import { personalDocuments } from "@/features/intake/config/wizard.config";
 import { UploadedFileItem } from "@/features/intake/hooks/use-wizard-draft";
 import { PersonalAge } from "@/features/intake/types/wizard.types";
+import { isFileField } from "../utils/field-guards";
 
 const colors = {
 	navy: "#0D3B66",
@@ -41,7 +42,7 @@ export function WizardStepPersonal({
 							personales y los pasos posteriores.
 						</p>
 					</div>
-					<div className="grid grid-cols-2 gap-3">
+					<div className="flex flex-col gap-y-3 sm:grid sm:grid-cols-2 sm:gap-3">
 						<Button
 							type="button"
 							variant={age === "adult" ? "default" : "outline"}
@@ -74,6 +75,8 @@ export function WizardStepPersonal({
 
 			<div className="space-y-3">
 				{personalFields.map((field) => {
+					if (!isFileField(field)) return null;
+
 					const selectedFiles = files[field.id] ?? [];
 					const showRequiredWarning = Boolean(
 						showValidation && field.required && selectedFiles.length === 0,

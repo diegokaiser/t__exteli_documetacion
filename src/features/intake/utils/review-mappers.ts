@@ -7,6 +7,7 @@ import type { WizardDraft } from "@/features/intake/hooks/use-wizard-draft";
 import type { ConditionalField } from "@/features/intake/types/wizard.types";
 import {
 	getVisibleLaborFields,
+	isEffectivelyRequiredLaborField,
 	shouldShowVulnerability,
 } from "@/features/intake/utils/labor-rules";
 
@@ -17,6 +18,8 @@ export type ReviewItem = {
 	skipped?: boolean;
 	filesCount: number;
 	fileNames: string[];
+	value?: string;
+	type?: "file" | "text";
 };
 
 export type ReviewSectionData = {
@@ -36,6 +39,32 @@ function mapField(field: ConditionalField, draft: WizardDraft): ReviewItem {
 		skipped,
 		filesCount: files.length,
 		fileNames: files.map((file) => file.name),
+		value: field.type === "text" ? (draft.values[field.id] ?? "") : undefined,
+		type: field.type ?? "file",
+	};
+}
+
+function mapLaborField(
+	field: ConditionalField,
+	draft: WizardDraft,
+): ReviewItem {
+	const files = draft.files[field.id] ?? [];
+	const skipped = Boolean(draft.skipped[field.id]);
+
+	return {
+		id: field.id,
+		label: field.label,
+		required: isEffectivelyRequiredLaborField(
+			field.id,
+			draft.age,
+			draft.asylum,
+			draft.skipped,
+		),
+		skipped,
+		filesCount: files.length,
+		fileNames: files.map((file) => file.name),
+		value: field.type === "text" ? (draft.values[field.id] ?? "") : undefined,
+		type: field.type ?? "file",
 	};
 }
 
@@ -50,14 +79,14 @@ export function buildReviewSections(draft: WizardDraft): ReviewSectionData[] {
 		draft.age,
 		draft.asylum,
 		draft.skipped,
-	).map((field) => mapField(field, draft));
+	).map((field) => mapLaborField(field, draft));
 
 	const laborItems = shouldShowVulnerability(
 		draft.age,
 		draft.asylum,
 		draft.skipped,
 	)
-		? [...labor, mapField(laborDocuments.adult.vulnerability, draft)]
+		? [...labor, mapLaborField(laborDocuments.adult.vulnerability, draft)]
 		: labor;
 
 	const complementary = complementaryDocuments[draft.age].map((field) =>
@@ -85,8 +114,14 @@ export function buildReviewSections(draft: WizardDraft): ReviewSectionData[] {
 
 export function hasMissingRequiredDocuments(sections: ReviewSectionData[]) {
 	return sections.some((section) =>
-		section.items.some(
-			(item) => item.required && !item.skipped && item.filesCount === 0,
-		),
+		section.items.some((item) => {
+			if (!item.required || item.skipped) return false;
+
+			if (item.type === "text") {
+				return !item.value?.trim();
+			}
+
+			return item.filesCount === 0;
+		}),
 	);
 }

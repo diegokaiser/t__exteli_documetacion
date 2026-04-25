@@ -13,9 +13,10 @@ export const ADULT_NON_ASYLUM_IDS = [
 	"collective-registration-ascendants",
 ] as const;
 
-const DISABILITY_REGISTRATION_ID =
+export const DISABILITY_REGISTRATION_ID =
 	"collective-registration-descendants-disability";
-const DISABILITY_CERTIFICATE_ID =
+
+export const DISABILITY_CERTIFICATE_ID =
 	"collective-certificate-descendants-disability";
 
 export function getLaborBaseFields(
@@ -57,8 +58,6 @@ export function getVisibleLaborFields(
 				return Boolean(skipped["precontract-adult"]);
 
 			case DISABILITY_REGISTRATION_ID:
-				return Boolean(skipped["collective-registration-descendants"]);
-
 			case DISABILITY_CERTIFICATE_ID:
 				return Boolean(skipped["collective-registration-descendants"]);
 
@@ -83,11 +82,29 @@ export function shouldShowVulnerability(
 	);
 }
 
+export function isEffectivelyRequiredLaborField(
+	fieldId: string,
+	age: PersonalAge,
+	asylum: AsylumStatus,
+	skipped: Record<string, boolean>,
+) {
+	if (fieldId === DISABILITY_CERTIFICATE_ID) {
+		return !Boolean(skipped[DISABILITY_REGISTRATION_ID]);
+	}
+
+	const field = getLaborBaseFields(age, asylum).find(
+		(item) => item.id === fieldId,
+	);
+
+	return Boolean(field?.required);
+}
+
 export function getNextSkippedStateForAdultNonAsylum(
 	fieldId: string,
 	currentSkipped: Record<string, boolean>,
 ) {
 	const nextValue = !currentSkipped[fieldId];
+
 	const nextSkipped = {
 		...currentSkipped,
 		[fieldId]: nextValue,
@@ -98,33 +115,24 @@ export function getNextSkippedStateForAdultNonAsylum(
 			nextSkipped["precontract-adult"] = false;
 			nextSkipped["collective-registration-descendants"] = false;
 			nextSkipped[DISABILITY_REGISTRATION_ID] = false;
-			nextSkipped[DISABILITY_CERTIFICATE_ID] = false;
 			nextSkipped["collective-registration-ascendants"] = false;
 			return nextSkipped;
 
 		case "precontract-adult":
 			nextSkipped["collective-registration-descendants"] = false;
 			nextSkipped[DISABILITY_REGISTRATION_ID] = false;
-			nextSkipped[DISABILITY_CERTIFICATE_ID] = false;
 			nextSkipped["collective-registration-ascendants"] = false;
 			return nextSkipped;
 
 		case "collective-registration-descendants":
 			nextSkipped[DISABILITY_REGISTRATION_ID] = false;
-			nextSkipped[DISABILITY_CERTIFICATE_ID] = false;
 			nextSkipped["collective-registration-ascendants"] = false;
 			return nextSkipped;
 
 		case DISABILITY_REGISTRATION_ID:
-			nextSkipped[DISABILITY_CERTIFICATE_ID] = false;
 			nextSkipped["collective-registration-ascendants"] = false;
 			return nextSkipped;
 
-		case DISABILITY_CERTIFICATE_ID:
-			nextSkipped["collective-registration-ascendants"] = false;
-			return nextSkipped;
-
-		case "collective-registration-ascendants":
 		default:
 			return nextSkipped;
 	}
@@ -176,10 +184,6 @@ export function getFilesToClearForAdultNonAsylumToggle(
 				"collective-registration-ascendants",
 			];
 
-		case DISABILITY_CERTIFICATE_ID:
-			return [DISABILITY_CERTIFICATE_ID, "collective-registration-ascendants"];
-
-		case "collective-registration-ascendants":
 		default:
 			return [fieldId];
 	}

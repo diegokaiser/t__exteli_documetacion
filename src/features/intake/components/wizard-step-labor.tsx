@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileInputCard } from "@/features/intake/components/file-input-card";
+import { TextInputCard } from "@/features/intake/components/text-input-card";
 import { laborDocuments } from "@/features/intake/config/wizard.config";
 import { UploadedFileItem } from "@/features/intake/hooks/use-wizard-draft";
 import {
@@ -9,9 +10,12 @@ import {
 	PersonalAge,
 } from "@/features/intake/types/wizard.types";
 import {
+	DISABILITY_CERTIFICATE_ID,
+	DISABILITY_REGISTRATION_ID,
 	getFilesToClearForAdultNonAsylumToggle,
 	getNextSkippedStateForAdultNonAsylum,
 	getVisibleLaborFields,
+	isEffectivelyRequiredLaborField,
 	shouldShowVulnerability,
 } from "@/features/intake/utils/labor-rules";
 import { AlertCircle } from "lucide-react";
@@ -19,11 +23,6 @@ import { AlertCircle } from "lucide-react";
 const colors = {
 	navy: "#0D3B66",
 };
-
-const DISABILITY_REGISTRATION_ID =
-	"collective-registration-descendants-disability";
-const DISABILITY_CERTIFICATE_ID =
-	"collective-certificate-descendants-disability";
 
 export function WizardStepLabor({
 	age,
@@ -33,6 +32,8 @@ export function WizardStepLabor({
 	setSkipped,
 	clearFiles,
 	files,
+	values,
+	onValueChange,
 	onFilesChange,
 	onClearFiles,
 	onRemoveFile,
@@ -45,6 +46,8 @@ export function WizardStepLabor({
 	setSkipped: (nextSkipped: Record<string, boolean>) => void;
 	clearFiles: (fieldIds: string[]) => void;
 	files: Record<string, UploadedFileItem[]>;
+	values: Record<string, string>;
+	onValueChange: (fieldId: string, value: string) => void;
 	onFilesChange: (fieldId: string, files: FileList | null) => void;
 	onClearFiles: (fieldId: string) => void;
 	onRemoveFile: (fieldId: string, index: number) => void;
@@ -69,8 +72,8 @@ export function WizardStepLabor({
 						</p>
 						<p className="mt-1 text-xs leading-5 text-slate-500">
 							Toma en cuenta que debes haber solicitado protección internacional
-							o asilo, antes del 31 de diciembre del 2025. Incluso si
-							actualmente esta en trámite, denegado o en recurso.
+							o asilo antes del 31 de diciembre del 2025. Incluso si actualmente
+							está en trámite, denegado o en recurso.
 						</p>
 					</div>
 
@@ -109,15 +112,43 @@ export function WizardStepLabor({
 			<div className="space-y-3">
 				{laborFields.map((field) => {
 					const selectedFiles = files[field.id] ?? [];
-					const isAdultNonAsylumChain =
-						age === "adult" && asylum === "no" && Boolean(field.optionalToggle);
 
-					const isDisabilityCertificateField =
-						field.id === DISABILITY_CERTIFICATE_ID;
+					const isFileField = field.type !== "text";
+
+					const isAdultNonAsylumChain =
+						isFileField &&
+						age === "adult" &&
+						asylum === "no" &&
+						Boolean(field.optionalToggle);
 
 					const isDisabilityCertificateDisabled =
-						isDisabilityCertificateField &&
+						field.id === DISABILITY_CERTIFICATE_ID &&
 						Boolean(skipped[DISABILITY_REGISTRATION_ID]);
+
+					const isRequired = isEffectivelyRequiredLaborField(
+						field.id,
+						age,
+						asylum,
+						skipped,
+					);
+
+					if (field.type === "text") {
+						const value = values[field.id] ?? "";
+
+						return (
+							<TextInputCard
+								key={field.id}
+								field={field}
+								value={value}
+								onValueChange={(nextValue) =>
+									onValueChange(field.id, nextValue)
+								}
+								showRequiredWarning={Boolean(
+									showValidation && field.required && value.trim().length === 0,
+								)}
+							/>
+						);
+					}
 
 					return (
 						<FileInputCard
@@ -127,8 +158,9 @@ export function WizardStepLabor({
 							skipped={skipped[field.id]}
 							showRequiredWarning={Boolean(
 								showValidation &&
-								field.required &&
+								isRequired &&
 								!skipped[field.id] &&
+								!isDisabilityCertificateDisabled &&
 								selectedFiles.length === 0,
 							)}
 							onToggleSkip={
