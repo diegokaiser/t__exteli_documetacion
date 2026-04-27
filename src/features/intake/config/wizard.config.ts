@@ -1,4 +1,7 @@
-import { ConditionalField } from "@/features/intake/types/wizard.types";
+import {
+	ConditionalField,
+	FileConditionalField,
+} from "@/features/intake/types/wizard.types";
 
 const PDF_ONLY = ["application/pdf"];
 
@@ -6,7 +9,7 @@ type LaborDocumentsConfig = {
 	adult: {
 		asylumYes: ConditionalField[];
 		asylumNo: ConditionalField[];
-		vulnerability: ConditionalField;
+		vulnerability: FileConditionalField;
 	};
 	minor: {
 		asylumYes: ConditionalField[];
