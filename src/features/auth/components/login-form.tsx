@@ -13,12 +13,35 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, Mail, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const colors = {
 	navy: "#0D3B66",
 };
 
-export function LoginForm({ onLogin }: { onLogin: () => void }) {
+export function LoginForm() {
+	const router = useRouter();
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+
+	async function handleLogin() {
+		const res = await fetch("/api/auth/client-login", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ email, password }),
+		});
+
+		if (!res.ok) {
+			return;
+		}
+
+		router.replace("/app");
+		router.refresh();
+	}
+
 	return (
 		<AppShell
 			title="Acceso"
@@ -31,6 +54,7 @@ export function LoginForm({ onLogin }: { onLogin: () => void }) {
 						Usa las credenciales asociadas a tu expediente.
 					</CardDescription>
 				</CardHeader>
+
 				<CardContent className="space-y-5">
 					<div className="space-y-2">
 						<Label htmlFor="email">Correo electrónico</Label>
@@ -41,20 +65,14 @@ export function LoginForm({ onLogin }: { onLogin: () => void }) {
 								type="email"
 								placeholder="cliente@correo.com"
 								className="h-11 rounded-2xl border-slate-200 pl-10"
+								value={email}
+								onChange={(event) => setEmail(event.target.value)}
 							/>
 						</div>
 					</div>
 
 					<div className="space-y-2">
-						<div className="flex items-center justify-between">
-							<Label htmlFor="password">Contraseña</Label>
-							<button
-								className="text-xs font-medium"
-								style={{ color: colors.navy }}
-							>
-								¿Olvidaste tu contraseña?
-							</button>
-						</div>
+						<Label htmlFor="password">Contraseña</Label>
 						<div className="relative">
 							<Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 							<Input
@@ -62,6 +80,8 @@ export function LoginForm({ onLogin }: { onLogin: () => void }) {
 								type="password"
 								placeholder="••••••••"
 								className="h-11 rounded-2xl border-slate-200 pl-10"
+								value={password}
+								onChange={(event) => setPassword(event.target.value)}
 							/>
 						</div>
 					</div>
@@ -81,9 +101,10 @@ export function LoginForm({ onLogin }: { onLogin: () => void }) {
 					</Alert>
 
 					<Button
-						className="h-11 w-full rounded-2xl text-sm font-medium"
+						type="button"
+						className="h-11 w-full rounded-2xl text-sm font-medium cursor-pointer"
 						style={{ backgroundColor: colors.navy, color: "white" }}
-						onClick={onLogin}
+						onClick={handleLogin}
 					>
 						Entrar
 					</Button>

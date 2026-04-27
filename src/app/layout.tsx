@@ -1,3 +1,4 @@
+import { QueryProvider } from "@/providers/query-provider";
 import type { Metadata } from "next";
 import { Open_Sans, Roboto } from "next/font/google";
 import "./globals.css";
@@ -24,7 +25,9 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang="es" className={`${roboto.variable} ${openSans.variable}`}>
-			<body>{children}</body>
+			<body>
+				<QueryProvider>{children}</QueryProvider>
+			</body>
 		</html>
 	);
 }

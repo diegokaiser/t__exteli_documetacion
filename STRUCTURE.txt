@@ -1,0 +1,163 @@
+.
+├── AGENTS.md
+├── CLAUDE.md
+├── README.md
+├── STRUCTURE.txt
+├── components.json
+├── eslint.config.mjs
+├── functions
+│   └── create-client-user
+│       ├── package.json
+│       └── src
+│           └── main.ts
+├── next-env.d.ts
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── public
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── src
+│   ├── app
+│   │   ├── (admin)
+│   │   │   ├── admin
+│   │   │   │   ├── clients
+│   │   │   │   │   └── new
+│   │   │   │   │       └── page.tsx
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   └── layout.tsx
+│   │   ├── (private)
+│   │   │   ├── app
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── wizard
+│   │   │   │       ├── page.tsx
+│   │   │   │       ├── review
+│   │   │   │       │   └── page.tsx
+│   │   │   │       └── success
+│   │   │   │           └── page.tsx
+│   │   │   └── layout.tsx
+│   │   ├── (public)
+│   │   │   ├── admin-login
+│   │   │   │   └── page.tsx
+│   │   │   ├── login
+│   │   │   │   └── page.tsx
+│   │   │   └── verify-otp
+│   │   │       └── page.tsx
+│   │   ├── api
+│   │   │   ├── admin
+│   │   │   │   └── create-client
+│   │   │   │       └── route.ts
+│   │   │   └── auth
+│   │   │       ├── admin-login
+│   │   │       │   └── route.ts
+│   │   │       └── client-login
+│   │   │           └── route.ts
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── shared
+│   │   │   ├── app-shell.tsx
+│   │   │   ├── mobile-nav.tsx
+│   │   │   ├── private-client-guard.tsx
+│   │   │   └── splash-loader.tsx
+│   │   └── ui
+│   │       ├── alert.tsx
+│   │       ├── avatar.tsx
+│   │       ├── badge.tsx
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       ├── progress.tsx
+│   │       ├── separator.tsx
+│   │       └── tabs.tsx
+│   ├── features
+│   │   ├── admin
+│   │   │   ├── components
+│   │   │   │   ├── admin-dashboard-view.tsx
+│   │   │   │   ├── admin-login-form.tsx
+│   │   │   │   └── create-client-form.tsx
+│   │   │   ├── hooks
+│   │   │   │   ├── use-admin-login.ts
+│   │   │   │   └── use-create-client.ts
+│   │   │   ├── schemas
+│   │   │   │   ├── admin-login.schema.ts
+│   │   │   │   └── create-client.schema.ts
+│   │   │   ├── services
+│   │   │   │   ├── admin-login.ts
+│   │   │   │   └── create-client.ts
+│   │   │   └── types
+│   │   │       └── admin.types.ts
+│   │   ├── auth
+│   │   │   ├── components
+│   │   │   │   ├── login-form.tsx
+│   │   │   │   └── verify-opt.form.tsx
+│   │   │   ├── hooks
+│   │   │   │   ├── use-demo-session.ts
+│   │   │   │   ├── use-logout.ts
+│   │   │   │   ├── use-request-otp.ts
+│   │   │   │   └── use-verify-otp.ts
+│   │   │   ├── schemas
+│   │   │   │   ├── request-otp.schema.ts
+│   │   │   │   └── verify-otp.schema.ts
+│   │   │   ├── services
+│   │   │   │   ├── get-current.user.ts
+│   │   │   │   ├── logout.ts
+│   │   │   │   ├── request-otp.ts
+│   │   │   │   └── verify-otp.ts
+│   │   │   └── types
+│   │   │       └── auth.types.ts
+│   │   ├── dashboard
+│   │   │   └── components
+│   │   │       └── dashboard-view.tsx
+│   │   └── intake
+│   │       ├── components
+│   │       │   ├── file-input-card.tsx
+│   │       │   ├── review-document-item.tsx
+│   │       │   ├── review-section.tsx
+│   │       │   ├── submission-success.tsx
+│   │       │   ├── text-input-card.tsx
+│   │       │   ├── wizard-header.tsx
+│   │       │   ├── wizard-help.tsx
+│   │       │   ├── wizard-navigation.tsx
+│   │       │   ├── wizard-review-view.tsx
+│   │       │   ├── wizard-step-complementary.tsx
+│   │       │   ├── wizard-step-labor.tsx
+│   │       │   ├── wizard-step-personal.tsx
+│   │       │   └── wizard-view.tsx
+│   │       ├── config
+│   │       │   └── wizard.config.ts
+│   │       ├── hooks
+│   │       │   └── use-wizard-draft.ts
+│   │       ├── types
+│   │       │   └── wizard.types.ts
+│   │       └── utils
+│   │           ├── field-guards.ts
+│   │           ├── labor-rules.ts
+│   │           └── review-mappers.ts
+│   ├── lib
+│   │   ├── appwrite
+│   │   │   ├── client.ts
+│   │   │   ├── config.ts
+│   │   │   └── server.ts
+│   │   ├── auth
+│   │   │   ├── get-current-profile.ts
+│   │   │   ├── require-admin.ts
+│   │   │   └── user-role.ts
+│   │   ├── env
+│   │   │   ├── client-env.ts
+│   │   │   └── server-env.ts
+│   │   └── utils.ts
+│   └── providers
+│       └── query-provider.tsx
+├── tailwind.config.ts
+└── tsconfig.json
+
+55 directories, 106 files
