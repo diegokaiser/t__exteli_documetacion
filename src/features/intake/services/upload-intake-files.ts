@@ -16,6 +16,8 @@ export async function uploadIntakeFiles(
 ): Promise<UploadedIntakeDocument[]> {
 	const uploadedDocuments: UploadedIntakeDocument[] = [];
 
+	console.log("[BUCKET_ID]", appwriteConfig.documentsBucketId);
+
 	for (const [fieldId, files] of Object.entries(draft.files)) {
 		for (const file of files) {
 			const uploadedFile = await storage.createFile(

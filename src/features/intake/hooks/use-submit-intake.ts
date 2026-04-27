@@ -13,10 +13,31 @@ type SubmitIntakePayload = {
 	documents: UploadedIntakeDocument[];
 };
 
+async function parseResponse(res: Response) {
+	const contentType = res.headers.get("content-type");
+
+	if (contentType?.includes("application/json")) {
+		return res.json();
+	}
+
+	return null;
+}
+
 export function useSubmitIntake() {
 	return useMutation({
 		mutationFn: async (draft: WizardDraft) => {
-			const documents = await uploadIntakeFiles(draft);
+			let documents: UploadedIntakeDocument[];
+
+			try {
+				documents = await uploadIntakeFiles(draft);
+			} catch (error) {
+				console.error("[UPLOAD_INTAKE_FILES_ERROR]", error);
+				throw new Error(
+					error instanceof Error
+						? error.message
+						: "No se pudieron subir los archivos",
+				);
+			}
 
 			const payload: SubmitIntakePayload = {
 				age: draft.age,
@@ -34,10 +55,7 @@ export function useSubmitIntake() {
 				body: JSON.stringify(payload),
 			});
 
-			const contentType = res.headers.get("content-type");
-			const data = contentType?.includes("application/json")
-				? await res.json()
-				: null;
+			const data = await parseResponse(res);
 
 			if (!res.ok) {
 				throw new Error(data?.message ?? "No se pudo enviar la documentación");
