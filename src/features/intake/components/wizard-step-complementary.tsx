@@ -1,6 +1,5 @@
 import { FileInputCard } from "@/features/intake/components/file-input-card";
 import { complementaryDocuments } from "@/features/intake/config/wizard.config";
-import { UploadedFileItem } from "@/features/intake/hooks/use-wizard-draft";
 import { PersonalAge } from "@/features/intake/types/wizard.types";
 import { isFileField } from "../utils/field-guards";
 
@@ -13,7 +12,7 @@ export function WizardStepComplementary({
 	showValidation,
 }: {
 	age: PersonalAge;
-	files: Record<string, UploadedFileItem[]>;
+	files: Record<string, File[]>;
 	onFilesChange: (fieldId: string, files: FileList | null) => void;
 	onClearFiles: (fieldId: string) => void;
 	onRemoveFile: (fieldId: string, index: number) => void;

@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileInputCard } from "@/features/intake/components/file-input-card";
 import { personalDocuments } from "@/features/intake/config/wizard.config";
-import { UploadedFileItem } from "@/features/intake/hooks/use-wizard-draft";
 import { PersonalAge } from "@/features/intake/types/wizard.types";
 import { isFileField } from "../utils/field-guards";
 
@@ -21,7 +20,7 @@ export function WizardStepPersonal({
 }: {
 	age: PersonalAge;
 	setAge: (age: PersonalAge) => void;
-	files: Record<string, UploadedFileItem[]>;
+	files: Record<string, File[]>;
 	onFilesChange: (fieldId: string, files: FileList | null) => void;
 	onClearFiles: (fieldId: string) => void;
 	onRemoveFile: (fieldId: string, index: number) => void;

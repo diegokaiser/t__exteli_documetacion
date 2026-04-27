@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileInputCard } from "@/features/intake/components/file-input-card";
 import { TextInputCard } from "@/features/intake/components/text-input-card";
 import { laborDocuments } from "@/features/intake/config/wizard.config";
-import { UploadedFileItem } from "@/features/intake/hooks/use-wizard-draft";
 import {
 	AsylumStatus,
 	PersonalAge,
@@ -45,7 +44,7 @@ export function WizardStepLabor({
 	skipped: Record<string, boolean>;
 	setSkipped: (nextSkipped: Record<string, boolean>) => void;
 	clearFiles: (fieldIds: string[]) => void;
-	files: Record<string, UploadedFileItem[]>;
+	files: Record<string, File[]>;
 	values: Record<string, string>;
 	onValueChange: (fieldId: string, value: string) => void;
 	onFilesChange: (fieldId: string, files: FileList | null) => void;
