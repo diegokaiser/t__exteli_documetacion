@@ -6,10 +6,5 @@ import { useRouter } from "next/navigation";
 export default function WizardPage() {
 	const router = useRouter();
 
-	return (
-		<WizardView
-			onBackToDashboard={() => router.push("/app")}
-			onReview={() => router.push("/app/wizard/review")}
-		/>
-	);
+	return <WizardView onBackToDashboard={() => router.push("/app")} />;
 }

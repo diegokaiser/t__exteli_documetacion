@@ -4,21 +4,13 @@ import type {
 	AsylumStatus,
 	PersonalAge,
 } from "@/features/intake/types/wizard.types";
-import { useEffect, useMemo, useState } from "react";
-
-const STORAGE_KEY = "wizard-draft";
-
-export type UploadedFileItem = {
-	name: string;
-	size?: number;
-	type?: string;
-};
+import { useMemo, useState } from "react";
 
 export type WizardDraft = {
 	age: PersonalAge;
 	asylum: AsylumStatus;
 	skipped: Record<string, boolean>;
-	files: Record<string, UploadedFileItem[]>;
+	files: Record<string, File[]>;
 	values: Record<string, string>;
 	submittedAt?: string;
 };
@@ -40,63 +32,15 @@ const defaultDraft: WizardDraft = {
 
 export function useWizardDraft() {
 	const [draft, setDraft] = useState<WizardDraft>(defaultDraft);
-	const [isLoaded, setIsLoaded] = useState(false);
-
-	useEffect(() => {
-		try {
-			const raw = window.sessionStorage.getItem(STORAGE_KEY);
-
-			if (raw) {
-				const parsed = JSON.parse(raw);
-
-				setDraft({
-					...defaultDraft,
-					...parsed,
-					skipped: {
-						...defaultDraft.skipped,
-						...(parsed.skipped ?? {}),
-					},
-					files: parsed.files ?? {},
-					values: parsed.values ?? {},
-				});
-			}
-		} catch {
-			setDraft(defaultDraft);
-		} finally {
-			setIsLoaded(true);
-		}
-	}, []);
-
-	useEffect(() => {
-		if (!isLoaded) return;
-
-		window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-	}, [draft, isLoaded]);
 
 	const actions = useMemo(
 		() => ({
 			setAge: (age: PersonalAge) => {
-				setDraft((prev) => ({
-					...prev,
-					age,
-				}));
+				setDraft((prev) => ({ ...prev, age }));
 			},
 
 			setAsylum: (asylum: AsylumStatus) => {
-				setDraft((prev) => ({
-					...prev,
-					asylum,
-				}));
-			},
-
-			setSkip: (fieldId: string, value: boolean) => {
-				setDraft((prev) => ({
-					...prev,
-					skipped: {
-						...prev.skipped,
-						[fieldId]: value,
-					},
-				}));
+				setDraft((prev) => ({ ...prev, asylum }));
 			},
 
 			setSkipped: (nextSkipped: Record<string, boolean>) => {
@@ -110,13 +54,7 @@ export function useWizardDraft() {
 			},
 
 			setFiles: (fieldId: string, files: FileList | null) => {
-				const normalized = files
-					? Array.from(files).map((file) => ({
-							name: file.name,
-							size: file.size,
-							type: file.type,
-						}))
-					: [];
+				const normalized = files ? Array.from(files) : [];
 
 				setDraft((prev) => ({
 					...prev,
@@ -160,9 +98,7 @@ export function useWizardDraft() {
 						...prev,
 						files: {
 							...prev.files,
-							[fieldId]: currentFiles.filter(
-								(_, currentIndex) => currentIndex !== index,
-							),
+							[fieldId]: currentFiles.filter((_, i) => i !== index),
 						},
 					};
 				});
@@ -197,7 +133,6 @@ export function useWizardDraft() {
 
 			resetDraft: () => {
 				setDraft(defaultDraft);
-				window.sessionStorage.removeItem(STORAGE_KEY);
 			},
 		}),
 		[],
@@ -205,7 +140,6 @@ export function useWizardDraft() {
 
 	return {
 		draft,
-		isLoaded,
 		...actions,
 	};
 }

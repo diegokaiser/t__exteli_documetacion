@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
 import { AlertCircle, Clock3, FileUp } from "lucide-react";
 
 const colors = {
@@ -20,12 +21,29 @@ const colors = {
 };
 
 export function DashboardView({
+	data,
 	onOpenWizard,
 	onLogout,
 }: {
+	data: DashboardData;
 	onOpenWizard: () => void;
 	onLogout: () => void;
 }) {
+	const initials = data.profile.fullName
+		.split(" ")
+		.map((part) => part[0])
+		.join("")
+		.slice(0, 2)
+		.toUpperCase();
+
+	const statusLabel = data.case
+		? getStatusLabel(data.case.status)
+		: "Sin expedientes";
+
+	const uploadedDocumentsCount = data.case?.uploadedDocumentsCount ?? 0;
+	const progress = data.case?.progress ?? 0;
+	const pendingTasks = data.case?.pendingTasks ?? [];
+
 	return (
 		<AppShell
 			title="Mi expediente"
@@ -39,12 +57,16 @@ export function DashboardView({
 								<AvatarFallback
 									style={{ backgroundColor: colors.navy, color: "white" }}
 								>
-									CL
+									{initials}
 								</AvatarFallback>
 							</Avatar>
 							<div>
-								<p className="text-sm text-slate-500">Cliente</p>
-								<p className="font-medium text-slate-900">cliente@correo.com</p>
+								<p className="text-sm text-slate-500">
+									{data.profile.fullName}
+								</p>
+								<p className="font-medium text-slate-900">
+									{data.profile.email}
+								</p>
 							</div>
 						</div>
 
@@ -57,7 +79,7 @@ export function DashboardView({
 								</p>
 								<div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-900">
 									<Clock3 className="h-4 w-4" style={{ color: colors.navy }} />
-									En progreso
+									{statusLabel}
 								</div>
 							</div>
 							<div className="rounded-2xl bg-slate-50 p-4">
@@ -65,8 +87,8 @@ export function DashboardView({
 									Documentos
 								</p>
 								<div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-900">
-									<FileUp className="h-4 w-4" style={{ color: colors.navy }} />6
-									cargados
+									<FileUp className="h-4 w-4" style={{ color: colors.navy }} />
+									{uploadedDocumentsCount} cargados
 								</div>
 							</div>
 						</div>
@@ -76,9 +98,9 @@ export function DashboardView({
 								<span className="font-medium text-slate-900">
 									Progreso general
 								</span>
-								<span className="text-slate-500">65%</span>
+								<span className="text-slate-500">{progress}%</span>
 							</div>
-							<Progress value={65} className="h-2" />
+							<Progress value={progress} className="h-2" />
 						</div>
 					</CardContent>
 				</Card>
@@ -91,22 +113,24 @@ export function DashboardView({
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-3">
-						{[
-							"Subir tarjeta de residencia",
-							"Adjuntar nóminas del último trimestre",
-							"Añadir documentos complementarios",
-						].map((task) => (
-							<div
-								key={task}
-								className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3"
-							>
-								<AlertCircle className="mt-0.5 h-4 w-4 text-amber-500" />
-								<p className="text-sm text-slate-700">{task}</p>
+						{pendingTasks.length > 0 ? (
+							pendingTasks.map((task) => (
+								<div
+									key={task}
+									className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3"
+								>
+									<AlertCircle className="mt-0.5 h-4 w-4 text-amber-500" />
+									<p className="text-sm text-slate-700">{task}</p>
+								</div>
+							))
+						) : (
+							<div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+								No tienes pendientes por ahora.
 							</div>
-						))}
+						)}
 
 						<Button
-							className="mt-2 h-11 w-full rounded-2xl"
+							className="mt-2 h-11 w-full rounded-2xl cursor-pointer"
 							style={{ backgroundColor: colors.navy, color: "white" }}
 							onClick={onOpenWizard}
 						>
@@ -124,4 +148,17 @@ export function DashboardView({
 			</div>
 		</AppShell>
 	);
+}
+
+function getStatusLabel(status: NonNullable<DashboardData["case"]>["status"]) {
+	const labels = {
+		pending_documents: "Pendiente de documentación",
+		draft: "En progreso",
+		submitted: "Enviado",
+		in_review: "En revisión",
+		requires_changes: "Requiere cambios",
+		completed: "Completado",
+	};
+
+	return labels[status];
 }

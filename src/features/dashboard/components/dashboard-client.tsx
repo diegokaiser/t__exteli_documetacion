@@ -1,8 +1,8 @@
 "use client";
 
+import { DashboardView } from "@/features/dashboard/components/dashboard-view";
+import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
 import { useRouter } from "next/navigation";
-import type { DashboardData } from "../types/dashboard.types";
-import { DashboardView } from "./dashboard-view";
 
 export function DashboardClient({
 	initialData,

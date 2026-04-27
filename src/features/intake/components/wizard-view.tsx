@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/shared/mobile-nav";
 import { WizardHeader } from "@/features/intake/components/wizard-header";
 import { WizardHelp } from "@/features/intake/components/wizard-help";
 import { WizardNavigation } from "@/features/intake/components/wizard-navigation";
+import { WizardReviewView } from "@/features/intake/components/wizard-review-view";
 import { WizardStepComplementary } from "@/features/intake/components/wizard-step-complementary";
 import { WizardStepLabor } from "@/features/intake/components/wizard-step-labor";
 import { WizardStepPersonal } from "@/features/intake/components/wizard-step-personal";
@@ -23,10 +24,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 export function WizardView({
 	onBackToDashboard,
-	onReview,
 }: {
 	onBackToDashboard: () => void;
-	onReview: () => void;
 }) {
 	const [stepIndex, setStepIndex] = useState(0);
 	const [attemptedNextByStep, setAttemptedNextByStep] = useState<
@@ -52,6 +51,7 @@ export function WizardView({
 		"Datos personales",
 		"Datos laborales o de integración",
 		"Datos complementarios",
+		"Revisión",
 	];
 
 	useEffect(() => {
@@ -136,8 +136,6 @@ export function WizardView({
 			setStepIndex((prev) => prev + 1);
 			return;
 		}
-
-		onReview();
 	};
 
 	return (
@@ -195,12 +193,22 @@ export function WizardView({
 					/>
 				) : null}
 
-				<WizardNavigation
-					stepIndex={stepIndex}
-					totalSteps={titles.length}
-					onPrev={() => setStepIndex((prev) => Math.max(0, prev - 1))}
-					onNext={handleNext}
-				/>
+				{stepIndex === 3 ? (
+					<WizardReviewView
+						draft={draft}
+						onBack={() => setStepIndex(2)}
+						onConfirm={() => {}}
+					/>
+				) : null}
+
+				{stepIndex < 3 ? (
+					<WizardNavigation
+						stepIndex={stepIndex}
+						totalSteps={titles.length}
+						onPrev={() => setStepIndex((prev) => Math.max(0, prev - 1))}
+						onNext={handleNext}
+					/>
+				) : null}
 
 				<MobileNav
 					active="wizard"

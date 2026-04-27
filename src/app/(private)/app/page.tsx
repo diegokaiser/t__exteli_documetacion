@@ -1,25 +1,22 @@
+// src/app/(private)/app/page.tsx
+
 import { DashboardClient } from "@/features/dashboard/components/dashboard-client";
-import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
+import { getDashboardData } from "@/features/dashboard/services/get-dashboard-data";
+import { getCurrentSession } from "@/lib/auth/get-current-session";
+import { redirect } from "next/navigation";
 
 export default async function ClientDashboardPage() {
-	// Temporal hasta conectar Appwrite real
-	const data: DashboardData = {
-		profile: {
-			fullName: "Cliente Demo",
-			email: "cliente@correo.com",
-		},
-		case: {
-			id: "demo-case",
-			status: "pending_documents",
-			progress: 0,
-			uploadedDocumentsCount: 0,
-			pendingTasks: [
-				"Subir tarjeta de residencia",
-				"Adjuntar nóminas del último trimestre",
-				"Añadir documentos complementarios",
-			],
-		},
-	};
+	const session = await getCurrentSession();
+
+	if (!session) {
+		redirect("/login");
+	}
+
+	if (session.role !== "client") {
+		redirect("/admin");
+	}
+
+	const data = await getDashboardData(session.userId);
 
 	return <DashboardClient initialData={data} />;
 }
