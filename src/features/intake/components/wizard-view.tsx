@@ -22,6 +22,9 @@ import {
 } from "@/features/intake/utils/labor-rules";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useRouter } from "next/navigation";
+import { useSubmitIntake } from "../hooks/use-submit-intake";
+
 export function WizardView({
 	onBackToDashboard,
 }: {
@@ -42,10 +45,14 @@ export function WizardView({
 		clearFile,
 		clearFiles,
 		removeFile,
+		markSubmitted,
 	} = useWizardDraft();
 
 	const headerRef = useRef<HTMLDivElement | null>(null);
 	const isFirstStepRender = useRef(true);
+
+	const router = useRouter();
+	const submitIntake = useSubmitIntake();
 
 	const titles = [
 		"Datos personales",
@@ -197,7 +204,11 @@ export function WizardView({
 					<WizardReviewView
 						draft={draft}
 						onBack={() => setStepIndex(2)}
-						onConfirm={() => {}}
+						onConfirm={async () => {
+							await submitIntake.mutateAsync(draft);
+							markSubmitted();
+							router.replace("/app/wizard/success");
+						}}
 					/>
 				) : null}
 

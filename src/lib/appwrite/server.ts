@@ -1,5 +1,12 @@
 import { cookies } from "next/headers";
-import { Account, Client, Databases, Functions, Users } from "node-appwrite";
+import {
+	Account,
+	Client,
+	Databases,
+	Functions,
+	Storage,
+	Users,
+} from "node-appwrite";
 import { appwriteServerConfig } from "./config";
 
 export async function createSessionClient() {
@@ -30,6 +37,7 @@ export async function createAdminClient() {
 		account: new Account(client),
 		databases: new Databases(client),
 		functions: new Functions(client),
+		storage: new Storage(client),
 		users: new Users(client),
 	};
 }
