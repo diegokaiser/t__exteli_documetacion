@@ -9,7 +9,7 @@ export type BaseConditionalField = {
 };
 
 export type FileConditionalField = BaseConditionalField & {
-	type?: "file";
+	type?: "file" | "text";
 	multiple?: boolean;
 	optionalToggle?: string;
 	accept?: string[];

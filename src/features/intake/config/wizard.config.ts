@@ -2,6 +2,18 @@ import { ConditionalField } from "@/features/intake/types/wizard.types";
 
 const PDF_ONLY = ["application/pdf"];
 
+type LaborDocumentsConfig = {
+	adult: {
+		asylumYes: ConditionalField[];
+		asylumNo: ConditionalField[];
+		vulnerability: ConditionalField;
+	};
+	minor: {
+		asylumYes: ConditionalField[];
+		asylumNo: ConditionalField[];
+	};
+};
+
 export const personalDocuments: Record<"adult" | "minor", ConditionalField[]> =
 	{
 		adult: [
@@ -96,7 +108,7 @@ export const personalDocuments: Record<"adult" | "minor", ConditionalField[]> =
 		],
 	};
 
-export const laborDocuments = {
+export const laborDocuments: LaborDocumentsConfig = {
 	adult: {
 		asylumYes: [
 			{
