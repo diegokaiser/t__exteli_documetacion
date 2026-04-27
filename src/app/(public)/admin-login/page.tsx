@@ -1,10 +1,10 @@
-// src/app/(public)/login/page.tsx
+export const dynamic = "force-dynamic";
 
-import { LoginForm } from "@/features/auth/components/login-form";
+import { AdminLoginForm } from "@/features/admin/components/admin-login-form";
 import { getCurrentUser } from "@/features/auth/services/get-current.user";
 import { redirect } from "next/navigation";
 
-export default async function LoginPage() {
+export default async function AdminLoginPage() {
 	const user = await getCurrentUser();
 
 	if (user) {
@@ -15,5 +15,5 @@ export default async function LoginPage() {
 		redirect("/app");
 	}
 
-	return <LoginForm />;
+	return <AdminLoginForm />;
 }

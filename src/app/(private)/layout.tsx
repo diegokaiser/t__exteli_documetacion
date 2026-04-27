@@ -1,30 +1,19 @@
-"use client";
+import { getCurrentSession } from "@/lib/auth/get-current-session";
+import { redirect } from "next/navigation";
 
-import { SplashLoader } from "@/components/shared/splash-loader";
-import { useDemoSession } from "@/features/auth/hooks/use-demo-session";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-export default function PrivateLayout({
+export default async function PrivateLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
-	const router = useRouter();
-	const { isCheckingSession, hasSession } = useDemoSession();
+	const session = await getCurrentSession();
 
-	useEffect(() => {
-		if (!isCheckingSession && !hasSession) {
-			router.replace("/login");
-		}
-	}, [isCheckingSession, hasSession, router]);
-
-	if (isCheckingSession) {
-		return <SplashLoader />;
+	if (!session) {
+		redirect("/login");
 	}
 
-	if (!hasSession) {
-		return null;
+	if (session.role !== "client") {
+		redirect("/admin");
 	}
 
 	return <>{children}</>;
