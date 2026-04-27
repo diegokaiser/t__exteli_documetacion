@@ -1,20 +1,25 @@
-"use client";
+import { DashboardClient } from "@/features/dashboard/components/dashboard-client";
+import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
 
-import { useDemoSession } from "@/features/auth/hooks/use-demo-session";
-import { DashboardView } from "@/features/dashboard/components/dashboard-view";
-import { useRouter } from "next/navigation";
+export default async function ClientDashboardPage() {
+	// Temporal hasta conectar Appwrite real
+	const data: DashboardData = {
+		profile: {
+			fullName: "Cliente Demo",
+			email: "cliente@correo.com",
+		},
+		case: {
+			id: "demo-case",
+			status: "pending_documents",
+			progress: 0,
+			uploadedDocumentsCount: 0,
+			pendingTasks: [
+				"Subir tarjeta de residencia",
+				"Adjuntar nóminas del último trimestre",
+				"Añadir documentos complementarios",
+			],
+		},
+	};
 
-export default function ClientDashboardPage() {
-	const router = useRouter();
-	const { logout } = useDemoSession();
-
-	return (
-		<DashboardView
-			onOpenWizard={() => router.push("/app/wizard")}
-			onLogout={() => {
-				logout();
-				router.replace("/login");
-			}}
-		/>
-	);
+	return <DashboardClient initialData={data} />;
 }
