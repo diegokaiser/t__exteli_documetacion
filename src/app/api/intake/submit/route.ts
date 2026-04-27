@@ -3,7 +3,20 @@ import { createAdminClient } from "@/lib/appwrite/server";
 import { getCurrentSession } from "@/lib/auth/get-current-session";
 import { NextResponse } from "next/server";
 import { ID, Query } from "node-appwrite";
-import { InputFile } from "node-appwrite/file";
+
+type SubmitIntakeBody = {
+	age: string;
+	asylum: string;
+	skipped: Record<string, boolean>;
+	values: Record<string, string>;
+	documents: Array<{
+		fieldId: string;
+		fileId: string;
+		fileName: string;
+		fileSize: number;
+		mimeType: string;
+	}>;
+};
 
 export async function POST(req: Request) {
 	try {
@@ -13,25 +26,16 @@ export async function POST(req: Request) {
 			return NextResponse.json({ message: "No autorizado" }, { status: 401 });
 		}
 
-		const formData = await req.formData();
-		const payloadRaw = formData.get("payload");
+		const body = (await req.json()) as SubmitIntakeBody;
 
-		if (typeof payloadRaw !== "string") {
+		if (!Array.isArray(body.documents)) {
 			return NextResponse.json(
 				{ message: "Payload inválido" },
 				{ status: 400 },
 			);
 		}
 
-		const payload = JSON.parse(payloadRaw) as {
-			age: string;
-			asylum: string;
-			skipped: Record<string, boolean>;
-			values: Record<string, string>;
-			fileFields: Record<string, string[]>;
-		};
-
-		const { databases, storage } = await createAdminClient();
+		const { databases } = await createAdminClient();
 
 		const cases = await databases.listDocuments(
 			appwriteServerConfig.databaseId,
@@ -48,41 +52,23 @@ export async function POST(req: Request) {
 			);
 		}
 
-		let uploadedCount = 0;
-
-		for (const [fieldId, fileNames] of Object.entries(payload.fileFields)) {
-			for (const fileName of fileNames) {
-				const file = formData.get(fileName);
-
-				if (!(file instanceof File)) continue;
-
-				const buffer = Buffer.from(await file.arrayBuffer());
-
-				const uploadedFile = await storage.createFile(
-					appwriteServerConfig.documentsBucketId,
-					ID.unique(),
-					InputFile.fromBuffer(buffer, file.name),
-				);
-
-				await databases.createDocument(
-					appwriteServerConfig.databaseId,
-					appwriteServerConfig.documentsCollectionId,
-					ID.unique(),
-					{
-						caseId: activeCase.$id,
-						clientUserId: session.userId,
-						fieldId,
-						fileId: uploadedFile.$id,
-						fileName: file.name,
-						fileSize: file.size,
-						mimeType: file.type,
-						status: "submitted",
-						createdAt: new Date().toISOString(),
-					},
-				);
-
-				uploadedCount += 1;
-			}
+		for (const document of body.documents) {
+			await databases.createDocument(
+				appwriteServerConfig.databaseId,
+				appwriteServerConfig.documentsCollectionId,
+				ID.unique(),
+				{
+					caseId: activeCase.$id,
+					clientUserId: session.userId,
+					fieldId: document.fieldId,
+					fileId: document.fileId,
+					fileName: document.fileName,
+					fileSize: document.fileSize,
+					mimeType: document.mimeType,
+					status: "submitted",
+					createdAt: new Date().toISOString(),
+				},
+			);
 		}
 
 		await databases.updateDocument(
@@ -91,17 +77,21 @@ export async function POST(req: Request) {
 			activeCase.$id,
 			{
 				status: "submitted",
-				age: payload.age,
-				asylum: payload.asylum,
-				skipped: payload.skipped,
-				values: payload.values,
-				uploadedDocumentsCount: uploadedCount,
+				age: body.age,
+				asylum: body.asylum,
+				skipped: body.skipped,
+				values: body.values,
+				uploadedDocumentsCount: body.documents.length,
 				progress: 100,
 				submittedAt: new Date().toISOString(),
 			},
 		);
 
-		return NextResponse.json({ ok: true });
+		return NextResponse.json({
+			ok: true,
+			uploadedDocumentsCount: body.documents.length,
+			caseId: activeCase.$id,
+		});
 	} catch (error) {
 		console.error("[SUBMIT_INTAKE_ERROR]", error);
 

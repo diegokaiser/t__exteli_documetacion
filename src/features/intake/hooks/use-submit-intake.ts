@@ -1,45 +1,49 @@
 import { useMutation } from "@tanstack/react-query";
+import {
+	uploadIntakeFiles,
+	type UploadedIntakeDocument,
+} from "../services/upload-intake-files";
 import type { WizardDraft } from "./use-wizard-draft";
+
+type SubmitIntakePayload = {
+	age: WizardDraft["age"];
+	asylum: WizardDraft["asylum"];
+	skipped: WizardDraft["skipped"];
+	values: WizardDraft["values"];
+	documents: UploadedIntakeDocument[];
+};
 
 export function useSubmitIntake() {
 	return useMutation({
 		mutationFn: async (draft: WizardDraft) => {
-			const formData = new FormData();
+			const documents = await uploadIntakeFiles(draft);
 
-			const fileFields: Record<string, string[]> = {};
-
-			Object.entries(draft.files).forEach(([fieldId, files]) => {
-				fileFields[fieldId] = [];
-
-				files.forEach((file, index) => {
-					const key = `${fieldId}-${index}`;
-					fileFields[fieldId].push(key);
-					formData.append(key, file);
-				});
-			});
-
-			formData.append(
-				"payload",
-				JSON.stringify({
-					age: draft.age,
-					asylum: draft.asylum,
-					skipped: draft.skipped,
-					values: draft.values,
-					fileFields,
-				}),
-			);
+			const payload: SubmitIntakePayload = {
+				age: draft.age,
+				asylum: draft.asylum,
+				skipped: draft.skipped,
+				values: draft.values,
+				documents,
+			};
 
 			const res = await fetch("/api/intake/submit", {
 				method: "POST",
-				body: formData,
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(payload),
 			});
 
+			const contentType = res.headers.get("content-type");
+			const data = contentType?.includes("application/json")
+				? await res.json()
+				: null;
+
 			if (!res.ok) {
-				const error = await res.json();
-				throw new Error(error.message ?? "No se pudo enviar la documentación");
+				throw new Error(data?.message ?? "No se pudo enviar la documentación");
 			}
 
-			return res.json();
+			return data;
 		},
 	});
 }
