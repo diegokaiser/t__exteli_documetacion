@@ -30,7 +30,7 @@ export function WizardView({
 }: {
 	onBackToDashboard: () => void;
 }) {
-	const [stepIndex, setStepIndex] = useState(0);
+	const [stepIndex, setStepIndex] = useState(2);
 	const [attemptedNextByStep, setAttemptedNextByStep] = useState<
 		Record<number, boolean>
 	>({});

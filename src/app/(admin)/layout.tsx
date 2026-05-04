@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 
+import { Toaster } from "@/components/ui/sonner";
+import { AdminShell } from "@/features/admin/layout/admin-shell";
 import { getCurrentUser } from "@/features/auth/services/get-current.user";
 import { redirect } from "next/navigation";
 
@@ -18,5 +20,10 @@ export default async function AdminLayout({
 		redirect("/app");
 	}
 
-	return <>{children}</>;
+	return (
+		<>
+			<AdminShell user={user}>{children}</AdminShell>
+			<Toaster richColors position="top-right" />
+		</>
+	);
 }

@@ -53,20 +53,62 @@ export async function POST(req: Request) {
 		}
 
 		for (const document of body.documents) {
+			const submissions = await databases.listDocuments(
+				appwriteServerConfig.databaseId,
+				appwriteServerConfig.documentSubmissionsCollectionId,
+				[
+					Query.equal("caseId", activeCase.$id),
+					Query.equal("requirementKey", document.fieldId),
+				],
+			);
+
+			let submission = submissions.documents[0];
+
+			if (!submission) {
+				submission = await databases.createDocument(
+					appwriteServerConfig.databaseId,
+					appwriteServerConfig.documentSubmissionsCollectionId,
+					ID.unique(),
+					{
+						caseId: activeCase.$id,
+						requirementKey: document.fieldId,
+						status: "uploaded",
+						skippedByUser: false,
+						requiredAtSubmission: true,
+						adminDecision: "pending",
+						lastUpdatedAt: new Date().toISOString(),
+						notesForClient: null,
+					},
+				);
+			} else {
+				submission = await databases.updateDocument(
+					appwriteServerConfig.databaseId,
+					appwriteServerConfig.documentSubmissionsCollectionId,
+					submission.$id,
+					{
+						status: "uploaded",
+						skippedByUser: false,
+						adminDecision: "pending",
+						lastUpdatedAt: new Date().toISOString(),
+					},
+				);
+			}
+
 			await databases.createDocument(
 				appwriteServerConfig.databaseId,
-				appwriteServerConfig.documentsCollectionId,
+				appwriteServerConfig.documentAssetsCollectionId,
 				ID.unique(),
 				{
+					bucketType: "raw",
+					sizeBytes: document.fileSize,
+					kind: "original",
+					appwriteFileId: document.fileId,
+					originalFilename: document.fileName,
+					storedFilename: document.fileName,
+					mimeType: document.mimeType || null,
 					caseId: activeCase.$id,
-					clientUserId: session.userId,
-					fieldId: document.fieldId,
-					fileId: document.fileId,
-					fileName: document.fileName,
-					fileSize: document.fileSize,
-					mimeType: document.mimeType,
-					status: "submitted",
-					createdAt: new Date().toISOString(),
+					submissionId: submission.$id,
+					uploadedByUserId: session.userId,
 				},
 			);
 		}
@@ -77,13 +119,14 @@ export async function POST(req: Request) {
 			activeCase.$id,
 			{
 				status: "submitted",
-				age: body.age,
-				asylum: body.asylum,
-				skipped: body.skipped,
-				values: body.values,
-				uploadedDocumentsCount: body.documents.length,
-				progress: 100,
+				processingStatus: "processing",
+				currentStep: 7,
+				ageCategory: body.age,
+				asylumStatus: body.asylum,
+				draftCompleted: true,
+				lastEditedAt: new Date().toISOString(),
 				submittedAt: new Date().toISOString(),
+				updatedBy: session.userId,
 			},
 		);
 

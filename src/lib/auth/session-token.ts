@@ -1,5 +1,3 @@
-// src/lib/auth/session-token.ts
-
 import crypto from "crypto";
 
 type SessionPayload = {
@@ -41,6 +39,10 @@ export function verifySession(token?: string): SessionPayload | null {
 		.createHmac("sha256", getSecret())
 		.update(encodedPayload)
 		.digest("base64url");
+
+	if (signature.length !== expectedSignature.length) {
+		return null;
+	}
 
 	if (
 		!crypto.timingSafeEqual(

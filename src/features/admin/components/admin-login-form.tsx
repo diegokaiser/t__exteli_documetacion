@@ -9,10 +9,18 @@ import {
 	adminLoginSchema,
 } from "../schemas/admin-login.schema";
 
+import { AppShell } from "@/components/shared/app-shell";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Lock, Mail } from "lucide-react";
 
 export function AdminLoginForm() {
 	const router = useRouter();
@@ -34,25 +42,49 @@ export function AdminLoginForm() {
 	});
 
 	return (
-		<div className="flex min-h-screen items-center justify-center">
-			<Card className="w-full max-w-md rounded-2xl">
-				<CardHeader>
-					<CardTitle>Admin Login</CardTitle>
+		<AppShell
+			title="Acceso"
+			subtitle="Inicia sesión con tu correo y contraseña para entrar al portal documental."
+		>
+			<Card className="rounded-3xl border-0 shadow-lg">
+				<CardHeader className="space-y-2 pb-4">
+					<CardTitle className="text-xl">Iniciar sesión</CardTitle>
+					<CardDescription>
+						Usa las credenciales asociadas a tu usuario.
+					</CardDescription>
 				</CardHeader>
 
-				<CardContent>
-					<form onSubmit={onSubmit} className="space-y-4">
-						<div>
-							<Label>Email</Label>
-							<Input type="email" {...form.register("email")} />
+				<CardContent className="space-y-5">
+					<form onSubmit={onSubmit}>
+						<div className="space-y-2">
+							<Label htmlFor="email">Correo electrónico</Label>
+							<div className="relative">
+								<Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+								<Input
+									id="email"
+									type="email"
+									placeholder="admin@correo.com"
+									className="h-11 rounded-2xl border-slate-200 pl-10"
+									{...form.register("email")}
+								/>
+							</div>
 							<p className="text-sm text-red-500">
 								{form.formState.errors.email?.message}
 							</p>
 						</div>
 
-						<div>
-							<Label>Password</Label>
-							<Input type="password" {...form.register("password")} />
+						<div className="space-y-2">
+							<Label htmlFor="password">Contraseña</Label>
+							<div className="relative">
+								<Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+								<Input
+									id="password"
+									type="password"
+									placeholder="••••••••"
+									className="h-11 rounded-2xl border-slate-200 pl-10"
+									{...form.register("password")}
+								/>
+							</div>
 							<p className="text-sm text-red-500">
 								{form.formState.errors.password?.message}
 							</p>
@@ -66,7 +98,7 @@ export function AdminLoginForm() {
 
 						<Button
 							type="submit"
-							className="w-full"
+							className="h-11 w-full rounded-2xl text-sm font-medium cursor-pointer"
 							disabled={loginMutation.isPending}
 						>
 							{loginMutation.isPending ? "Entrando..." : "Entrar"}
@@ -74,6 +106,6 @@ export function AdminLoginForm() {
 					</form>
 				</CardContent>
 			</Card>
-		</div>
+		</AppShell>
 	);
 }
