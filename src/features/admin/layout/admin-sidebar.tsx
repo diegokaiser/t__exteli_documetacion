@@ -2,6 +2,7 @@ import {
 	FolderKanban,
 	FolderPlus,
 	LayoutDashboard,
+	LucideIcon,
 	UserPlus,
 	Users,
 } from "lucide-react";
