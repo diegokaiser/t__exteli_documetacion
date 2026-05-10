@@ -4,11 +4,11 @@ import { Client, Databases, Query } from "node-appwrite";
 
 type Params = {
 	params: Promise<{
-		userId: string;
+		clientId: string;
 	}>;
 };
 
-export async function GET(_: Request, { params }: Params) {
+export async function GET(_request: Request, { params }: Params) {
 	const session = await getCurrentSession();
 
 	if (!session) {
@@ -19,7 +19,7 @@ export async function GET(_: Request, { params }: Params) {
 		return NextResponse.json({ message: "Forbidden" }, { status: 403 });
 	}
 
-	const { userId } = await params;
+	const { clientId } = await params;
 
 	const client = new Client()
 		.setEndpoint(process.env.APPWRITE_ENDPOINT!)
@@ -39,7 +39,7 @@ export async function GET(_: Request, { params }: Params) {
 			databaseId,
 			submissionsCollectionId,
 			[
-				Query.equal("clientUserId", userId),
+				Query.equal("clientUserId", clientId),
 				Query.orderDesc("$createdAt"),
 				Query.limit(100),
 			],
@@ -49,24 +49,14 @@ export async function GET(_: Request, { params }: Params) {
 			databaseId,
 			assetsCollectionId,
 			[
-				Query.equal("clientUserId", userId),
+				Query.equal("clientUserId", clientId),
 				Query.orderDesc("$createdAt"),
 				Query.limit(100),
 			],
 		);
 
-		console.log("[CLIENT_DOCUMENTS] userId:", userId);
-		console.log(
-			"[CLIENT_DOCUMENTS] submissions:",
-			JSON.stringify(submissions.documents, null, 2),
-		);
-		console.log(
-			"[CLIENT_DOCUMENTS] assets:",
-			JSON.stringify(assets.documents, null, 2),
-		);
-
 		return NextResponse.json({
-			userId,
+			userId: clientId,
 			submissions: submissions.documents,
 			assets: assets.documents,
 		});
