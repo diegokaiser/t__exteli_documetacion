@@ -33,7 +33,7 @@ export function MobileNav({
 						return (
 							<button
 								key={item.id}
-								className="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-[11px] font-medium transition-colors"
+								className="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-[11px] font-medium transition-colors cursor-pointer"
 								style={{
 									backgroundColor: isActive
 										? "rgba(13,59,102,0.1)"

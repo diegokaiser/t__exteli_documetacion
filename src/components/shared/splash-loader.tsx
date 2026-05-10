@@ -3,7 +3,11 @@ const colors = {
 	lemon: "#FAF0CA",
 };
 
-export function SplashLoader() {
+export function SplashLoader({
+	message = "Cargando...",
+}: {
+	message?: string;
+}) {
 	return (
 		<div
 			className="flex min-h-screen items-center justify-center"
@@ -14,9 +18,7 @@ export function SplashLoader() {
 					className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700"
 					style={{ borderTopColor: colors.navy }}
 				/>
-				<p className="text-sm font-medium text-slate-700">
-					Buscando sesión activa...
-				</p>
+				<p className="text-sm font-medium text-slate-700">{message}</p>
 			</div>
 		</div>
 	);

@@ -22,6 +22,7 @@ import {
 } from "@/features/intake/utils/labor-rules";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { SplashLoader } from "@/components/shared/splash-loader";
 import { useRouter } from "next/navigation";
 import { useSubmitIntake } from "../hooks/use-submit-intake";
 
@@ -30,7 +31,7 @@ export function WizardView({
 }: {
 	onBackToDashboard: () => void;
 }) {
-	const [stepIndex, setStepIndex] = useState(2);
+	const [stepIndex, setStepIndex] = useState(0);
 	const [attemptedNextByStep, setAttemptedNextByStep] = useState<
 		Record<number, boolean>
 	>({});
@@ -51,6 +52,8 @@ export function WizardView({
 	const headerRef = useRef<HTMLDivElement | null>(null);
 	const isFirstStepRender = useRef(true);
 
+	const [isChangingStep, setIsChangingStep] = useState(false);
+
 	const router = useRouter();
 	const submitIntake = useSubmitIntake();
 
@@ -60,6 +63,15 @@ export function WizardView({
 		"Datos complementarios",
 		"Revisión",
 	];
+
+	const goToStepWithLoader = (nextStep: number) => {
+		setIsChangingStep(true);
+
+		window.setTimeout(() => {
+			setStepIndex(nextStep);
+			setIsChangingStep(false);
+		}, 350);
+	};
 
 	useEffect(() => {
 		if (isFirstStepRender.current) {
@@ -140,10 +152,17 @@ export function WizardView({
 		}
 
 		if (stepIndex < titles.length - 1) {
-			setStepIndex((prev) => prev + 1);
-			return;
+			goToStepWithLoader(stepIndex + 1);
 		}
 	};
+
+	if (isChangingStep) {
+		return <SplashLoader message="Procesando documentos..." />;
+	}
+
+	if (submitIntake.isPending) {
+		return <SplashLoader message="Enviando documentación..." />;
+	}
 
 	return (
 		<AppShell
@@ -203,7 +222,8 @@ export function WizardView({
 				{stepIndex === 3 ? (
 					<WizardReviewView
 						draft={draft}
-						onBack={() => setStepIndex(2)}
+						onBack={() => goToStepWithLoader(2)}
+						isConfirming={submitIntake.isPending}
 						onConfirm={async () => {
 							await submitIntake.mutateAsync(draft);
 							markSubmitted();
@@ -216,7 +236,7 @@ export function WizardView({
 					<WizardNavigation
 						stepIndex={stepIndex}
 						totalSteps={titles.length}
-						onPrev={() => setStepIndex((prev) => Math.max(0, prev - 1))}
+						onPrev={() => goToStepWithLoader(Math.max(0, stepIndex - 1))}
 						onNext={handleNext}
 					/>
 				) : null}

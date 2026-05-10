@@ -1,14 +1,21 @@
 "use client";
 
+import { SplashLoader } from "@/components/shared/splash-loader";
 import { DashboardView } from "@/features/dashboard/components/dashboard-view";
 import type { DashboardData } from "@/features/dashboard/types/dashboard.types";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function DashboardClient({
 	initialData,
 }: {
 	initialData: DashboardData;
 }) {
+	const [isOpeningWizard, setIsOpeningWizard] = useState(false);
+
+	if (isOpeningWizard) {
+		return <SplashLoader message="Preparando formulario..." />;
+	}
 	const router = useRouter();
 
 	async function handleLogout() {
@@ -23,7 +30,10 @@ export function DashboardClient({
 	return (
 		<DashboardView
 			data={initialData}
-			onOpenWizard={() => router.push("/app/wizard")}
+			onOpenWizard={() => {
+				setIsOpeningWizard(true);
+				router.push("/app/wizard");
+			}}
 			onLogout={handleLogout}
 		/>
 	);

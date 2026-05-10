@@ -1,7 +1,8 @@
 "use client";
 
+import { PrepareSendDocumentsModal } from "@/features/admin/documents/prepare-send-documents-modal";
 import { FileText, Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAdminClientDetail } from "./use-admin-client-detail";
 
 type ClientDetailProps = {
@@ -9,6 +10,8 @@ type ClientDetailProps = {
 };
 
 export function ClientDetail({ clientId }: ClientDetailProps) {
+	const [isPrepareModalOpen, setIsPrepareModalOpen] = useState(false);
+
 	const { data, isLoading, isError, error } = useAdminClientDetail(clientId);
 
 	useEffect(() => {
@@ -40,111 +43,128 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
 		);
 	}
 
+	if (!data?.case) {
+		return (
+			<div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-700">
+				Este cliente no tiene un caso asociado.
+			</div>
+		);
+	}
+
 	return (
-		<section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-			<div className="border-b border-slate-100 p-6">
-				<div className="">
+		<>
+			<section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+				<div className="border-b border-slate-100 p-6">
 					<div>
-						<div className="flex items-center gap-x-2">
-							<span className="font-medium">{data.profile.fullName}</span>
-							<span
-								className={
-									data.case?.ageCategory === "minor"
-										? "rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
-										: "rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
-								}
-							>
-								{data.case.ageCategory === "minor" ? "Menor de edad" : "Adulto"}
-							</span>
-							<span
-								className={
-									data.case?.asylumStatus === "no"
-										? "rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
-										: "rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
-								}
-							>
-								{data.case.asylumStatus === "no"
-									? "No es solicitante de asilo"
-									: "Solicitante de asilo"}
-							</span>
-						</div>
-						<div className="capitalize text-[16px]">
-							{data.profile.documentType}: {data.profile.documentNumber}
-						</div>
-					</div>
-					<div className="flex flex-col gap-y-2 mt-4 text-[16px]">
-						{data.documentAssets.map((document: any) => {
-							const fileUrl = `/api/admin/files/${document.appwriteFileId}/view`;
-							const downloadUrl = `/api/admin/files/${document.appwriteFileId}/download`;
+						<div>
+							<div className="flex items-center gap-x-2">
+								<span className="font-medium">{data.profile.fullName}</span>
 
-							return (
-								<div
-									key={document.$id}
-									className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3"
+								<span
+									className={
+										data.case.ageCategory === "minor"
+											? "rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
+											: "rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
+									}
 								>
-									<div className="flex items-center gap-x-2">
-										<FileText className="h-4 w-4 text-slate-400" />
+									{data.case.ageCategory === "minor"
+										? "Menor de edad"
+										: "Adulto"}
+								</span>
 
-										<div className="flex flex-col">
-											<span className="text-sm font-medium text-slate-900">
-												{document.originalFilename}
-											</span>
+								<span
+									className={
+										data.case.asylumStatus === "no"
+											? "rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
+											: "rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
+									}
+								>
+									{data.case.asylumStatus === "no"
+										? "No es solicitante de asilo"
+										: "Solicitante de asilo"}
+								</span>
+							</div>
 
-											<span className="text-xs text-slate-500">
-												{(document.sizeBytes / 1024).toFixed(1)} KB
-											</span>
+							<div className="capitalize text-[16px]">
+								{data.profile.documentType}: {data.profile.documentNumber}
+							</div>
+						</div>
+
+						<div className="mt-4 flex flex-col gap-y-2 text-[16px]">
+							{data.documentAssets.length === 0 ? (
+								<p className="text-sm text-slate-500">
+									Este cliente no tiene documentos cargados.
+								</p>
+							) : (
+								data.documentAssets.map((document: any) => {
+									const fileUrl = `/api/admin/files/${document.appwriteFileId}/view`;
+									const downloadUrl = `/api/admin/files/${document.appwriteFileId}/download`;
+
+									return (
+										<div
+											key={document.$id}
+											className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3"
+										>
+											<div className="flex items-center gap-x-2">
+												<FileText className="h-4 w-4 text-slate-400" />
+
+												<div className="flex flex-col">
+													<span className="text-sm font-medium text-slate-900">
+														{document.originalFilename}
+													</span>
+
+													<span className="text-xs text-slate-500">
+														{(document.sizeBytes / 1024).toFixed(1)} KB
+													</span>
+												</div>
+											</div>
+
+											<div className="flex items-center gap-2">
+												<a
+													href={fileUrl}
+													target="_blank"
+													rel="noreferrer"
+													className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+												>
+													Ver
+												</a>
+
+												<a
+													href={downloadUrl}
+													className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+												>
+													Descargar
+												</a>
+											</div>
 										</div>
-									</div>
+									);
+								})
+							)}
+						</div>
 
-									<div className="flex items-center gap-2">
-										<a
-											href={fileUrl}
-											target="_blank"
-											rel="noreferrer"
-											className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-										>
-											Ver
-										</a>
-
-										<a
-											href={downloadUrl}
-											className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
-										>
-											Descargar
-										</a>
-									</div>
-								</div>
-							);
-						})}
-					</div>
-					<div className="mt-4">
-						<button
-							type="button"
-							onClick={async () => {
-								const response = await fetch(
-									`/api/admin/cases/${data.case.$id}/prepare-and-send`,
-									{ method: "POST" },
-								);
-
-								if (!response.ok) return;
-
-								const blob = await response.blob();
-								const url = window.URL.createObjectURL(blob);
-
-								const link = document.createElement("a");
-								link.href = url;
-								link.download = `case-${data.case.$id}-documents.zip`;
-								link.click();
-								link.remove();
-								window.URL.revokeObjectURL(url);
-							}}
-							className="cursor-pointer rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-						>
-							Preparar y enviar
-						</button>
+						<div className="mt-4">
+							<button
+								type="button"
+								onClick={() => setIsPrepareModalOpen(true)}
+								disabled={data.documentAssets.length === 0}
+								className="cursor-pointer rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								Preparar
+							</button>
+						</div>
 					</div>
 				</div>
-			</div>
-		</section>
+			</section>
+
+			<PrepareSendDocumentsModal
+				open={isPrepareModalOpen}
+				onClose={() => setIsPrepareModalOpen(false)}
+				caseId={data.case.$id}
+				defaultValues={{
+					email: data.profile.email,
+					phone: data.profile.phone,
+				}}
+			/>
+		</>
 	);
 }

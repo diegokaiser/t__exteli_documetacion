@@ -43,6 +43,7 @@ export function DashboardView({
 	const uploadedDocumentsCount = data.case?.uploadedDocumentsCount ?? 0;
 	const progress = data.case?.progress ?? 0;
 	const pendingTasks = data.case?.pendingTasks ?? [];
+	const hasSubmittedDocuments = Boolean(data.case?.hasSubmittedDocuments);
 
 	return (
 		<AppShell
@@ -107,13 +108,36 @@ export function DashboardView({
 
 				<Card className="rounded-3xl border-0 shadow-lg">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg">Pendientes prioritarios</CardTitle>
+						<CardTitle className="text-lg">
+							{hasSubmittedDocuments
+								? "Documentación enviada"
+								: "Pendientes prioritarios"}
+						</CardTitle>
 						<CardDescription>
-							Completa estos archivos para avanzar con la revisión.
+							{hasSubmittedDocuments
+								? "Hemos recibido tu documentación correctamente. El equipo revisará tu expediente."
+								: "Completa estos archivos para avanzar con la revisión."}
 						</CardDescription>
 					</CardHeader>
+
 					<CardContent className="space-y-3">
-						{pendingTasks.length > 0 ? (
+						{hasSubmittedDocuments ? (
+							<div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+								<p>
+									Has enviado {uploadedDocumentsCount} documento
+									{uploadedDocumentsCount === 1 ? "" : "s"}.
+								</p>
+
+								{data.case?.submittedAt ? (
+									<p className="mt-1 text-xs text-slate-500">
+										Fecha de envío:{" "}
+										{new Date(data.case.submittedAt).toLocaleDateString(
+											"es-ES",
+										)}
+									</p>
+								) : null}
+							</div>
+						) : pendingTasks.length > 0 ? (
 							pendingTasks.map((task) => (
 								<div
 									key={task}
@@ -131,10 +155,18 @@ export function DashboardView({
 
 						<Button
 							className="mt-2 h-11 w-full rounded-2xl cursor-pointer"
-							style={{ backgroundColor: colors.navy, color: "white" }}
+							style={{
+								backgroundColor: hasSubmittedDocuments
+									? "#CBD5E1"
+									: colors.navy,
+								color: "white",
+							}}
 							onClick={onOpenWizard}
+							disabled={hasSubmittedDocuments}
 						>
-							Completar documentación
+							{hasSubmittedDocuments
+								? "Documentación enviada"
+								: "Completar documentación"}
 						</Button>
 					</CardContent>
 				</Card>
@@ -154,6 +186,7 @@ function getStatusLabel(status: NonNullable<DashboardData["case"]>["status"]) {
 	const labels = {
 		pending_documents: "Pendiente de documentación",
 		draft: "En progreso",
+		uploaded: "Documentación cargada",
 		submitted: "Enviado",
 		in_review: "En revisión",
 		requires_changes: "Requiere cambios",

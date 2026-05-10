@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/shared/app-shell";
+import { SplashLoader } from "@/components/shared/splash-loader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,22 +25,34 @@ export function LoginForm() {
 	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [isLoggingIn, setIsLoggingIn] = useState(false);
 
 	async function handleLogin() {
-		const res = await fetch("/api/auth/client-login", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ email, password }),
-		});
+		try {
+			setIsLoggingIn(true);
 
-		if (!res.ok) {
-			return;
+			const res = await fetch("/api/auth/client-login", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ email, password }),
+			});
+
+			if (!res.ok) {
+				setIsLoggingIn(false);
+				return;
+			}
+
+			router.replace("/app");
+			router.refresh();
+		} catch {
+			setIsLoggingIn(false);
 		}
+	}
 
-		router.replace("/app");
-		router.refresh();
+	if (isLoggingIn) {
+		return <SplashLoader message="Iniciando sesión..." />;
 	}
 
 	return (
@@ -102,6 +115,7 @@ export function LoginForm() {
 
 					<Button
 						type="button"
+						disabled={isLoggingIn}
 						className="h-11 w-full rounded-2xl text-sm font-medium cursor-pointer"
 						style={{ backgroundColor: colors.navy, color: "white" }}
 						onClick={handleLogin}

@@ -1,8 +1,11 @@
+import { buildDocumentsEmailBody } from "@/features/admin/documents/build-documents-email-body";
+import { buildDocumentsEmailMetadata } from "@/features/admin/documents/build-documents-email-metadata";
 import { documentPackageRules } from "@/features/admin/documents/document-package-rules";
+import { prepareDocumentsSchema } from "@/features/admin/documents/prepare-documents.schema";
 import { getCurrentSession } from "@/lib/auth/get-current-session";
 import JSZip from "jszip";
 import { NextResponse } from "next/server";
-import { Client, Databases, Query, Storage } from "node-appwrite";
+import { Client, Databases, Query, Storage, Users } from "node-appwrite";
 import { PDFDocument } from "pdf-lib";
 
 type Params = {
@@ -12,29 +15,17 @@ type Params = {
 };
 
 async function toArrayBuffer(file: unknown): Promise<ArrayBuffer> {
-	if (file instanceof ArrayBuffer) {
-		return file;
-	}
+	if (file instanceof ArrayBuffer) return file;
 
-	if (file instanceof Blob) {
-		return file.arrayBuffer();
-	}
+	if (file instanceof Blob) return file.arrayBuffer();
 
 	if (file instanceof Uint8Array) {
 		const copy = new Uint8Array(file.byteLength);
 		copy.set(file);
-
 		return copy.buffer;
 	}
 
 	throw new Error("Unsupported file response type");
-}
-
-function toBodyInit(buffer: Uint8Array): BodyInit {
-	const copy = new Uint8Array(buffer.byteLength);
-	copy.set(buffer);
-
-	return copy.buffer;
 }
 
 async function mergePdfBuffers(buffers: ArrayBuffer[]) {
@@ -56,13 +47,24 @@ function filename(name: string) {
 	return `${name}.pdf`;
 }
 
-export async function POST(_: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
 	const session = await getCurrentSession();
 
 	if (!session || session.role !== "admin") {
 		return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 	}
 
+	const body = await request.json();
+	const parsed = prepareDocumentsSchema.safeParse(body);
+
+	if (!parsed.success) {
+		return NextResponse.json(
+			{ message: "Invalid payload", errors: parsed.error.flatten() },
+			{ status: 400 },
+		);
+	}
+
+	const form = parsed.data;
 	const { caseId } = await params;
 
 	const client = new Client()
@@ -72,8 +74,17 @@ export async function POST(_: Request, { params }: Params) {
 
 	const databases = new Databases(client);
 	const storage = new Storage(client);
+	const users = new Users(client);
+
+	const adminUser = await users.get({
+		userId: session.userId,
+	});
+
+	const adminFirstName = adminUser.name.split(" ")[0] ?? "GESTOR";
 
 	const databaseId = process.env.APPWRITE_DATABASE_ID!;
+	const casesCollectionId = process.env.APPWRITE_CASES_COLLECTION_ID!;
+	const profilesCollectionId = process.env.APPWRITE_PROFILES_COLLECTION_ID!;
 	const submissionsCollectionId =
 		process.env.APPWRITE_DOCUMENT_SUBMISSIONS_COLLECTION_ID!;
 	const assetsCollectionId =
@@ -81,6 +92,27 @@ export async function POST(_: Request, { params }: Params) {
 	const bucketId = process.env.APPWRITE_DOCUMENTS_BUCKET_ID!;
 
 	try {
+		const caseDoc = await databases.getDocument(
+			databaseId,
+			casesCollectionId,
+			caseId,
+		);
+
+		const profilesResult = await databases.listDocuments(
+			databaseId,
+			profilesCollectionId,
+			[Query.equal("userId", caseDoc.clientUserId), Query.limit(1)],
+		);
+
+		const profile = profilesResult.documents[0];
+
+		if (!profile) {
+			return NextResponse.json(
+				{ message: "Client profile not found" },
+				{ status: 404 },
+			);
+		}
+
 		const [documentSubmissions, documentAssets] = await Promise.all([
 			databases.listDocuments(databaseId, submissionsCollectionId, [
 				Query.equal("caseId", caseId),
@@ -128,23 +160,18 @@ export async function POST(_: Request, { params }: Params) {
 		for (const rule of documentPackageRules) {
 			if (rule.mode === "single") {
 				const assets = assetsByRequirementKey[rule.requirementKey] ?? [];
-
 				if (assets.length !== 1) continue;
 
 				const asset = assets[0];
-
 				if (asset.mimeType !== "application/pdf") continue;
 
 				const buffer = await getPdfBuffer(asset.appwriteFileId);
-
 				zip.file(filename(rule.outputName), buffer);
-
 				continue;
 			}
 
 			if (rule.mode === "merge-all") {
 				const assets = assetsByRequirementKey[rule.requirementKey] ?? [];
-
 				if (assets.length === 0) continue;
 
 				const pdfAssets = assets.filter(
@@ -164,9 +191,7 @@ export async function POST(_: Request, { params }: Params) {
 				);
 
 				const mergedPdf = await mergePdfBuffers(buffers);
-
 				zip.file(filename(rule.outputName), mergedPdf);
-
 				continue;
 			}
 
@@ -182,17 +207,13 @@ export async function POST(_: Request, { params }: Params) {
 					]);
 
 					const mergedPdf = await mergePdfBuffers(buffers);
-
 					zip.file(filename(rule.apostilledOutputName), mergedPdf);
-
 					continue;
 				}
 
 				if (baseAssets.length === 1 && apostilleAssets.length === 0) {
 					const buffer = await getPdfBuffer(baseAssets[0].appwriteFileId);
-
 					zip.file(filename(rule.outputName), buffer);
-
 					continue;
 				}
 			}
@@ -206,11 +227,35 @@ export async function POST(_: Request, { params }: Params) {
 			},
 		});
 
-		return new Response(toBodyInit(zipBuffer), {
-			headers: {
-				"Content-Type": "application/zip",
-				"Content-Disposition": `attachment; filename="case-${caseId}-documents.zip"`,
+		const { subject, zipFilename } = buildDocumentsEmailMetadata({
+			sessionUser: {
+				firstName: adminFirstName,
 			},
+			profile: {
+				fullName: profile.fullName,
+			},
+			caseDoc: {
+				ageCategory: caseDoc.ageCategory,
+			},
+			assetsByRequirementKey,
+		});
+
+		const html = buildDocumentsEmailBody({
+			clientFullName: profile.fullName,
+			form,
+		});
+
+		console.log("[PREPARE_EMAIL_SUBJECT]", subject);
+		console.log("[PREPARE_EMAIL_ZIP_FILENAME]", zipFilename);
+		console.log("[PREPARE_EMAIL_BODY]", html);
+		console.log("[PREPARE_EMAIL_ZIP_SIZE_BYTES]", zipBuffer.byteLength);
+
+		return NextResponse.json({
+			success: true,
+			subject,
+			zipFilename,
+			html,
+			zipSizeBytes: zipBuffer.byteLength,
 		});
 	} catch (error) {
 		console.error("[PREPARE_AND_SEND_ERROR]", error);

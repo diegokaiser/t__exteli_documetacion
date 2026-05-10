@@ -1,5 +1,3 @@
-// src/app/(private)/app/page.tsx
-
 import { DashboardClient } from "@/features/dashboard/components/dashboard-client";
 import { getDashboardData } from "@/features/dashboard/services/get-dashboard-data";
 import { getCurrentSession } from "@/lib/auth/get-current-session";

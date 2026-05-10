@@ -24,19 +24,41 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
 	const activeCase = cases.documents[0];
 
+	if (!activeCase) {
+		return {
+			profile: {
+				fullName: profile?.fullName ?? user.name ?? "Cliente",
+				email: profile?.email ?? user.email,
+			},
+			case: null,
+		};
+	}
+
+	const documentAssets = await databases.listDocuments(
+		appwriteServerConfig.databaseId,
+		appwriteServerConfig.documentAssetsCollectionId,
+		[Query.equal("caseId", activeCase.$id)],
+	);
+
+	const uploadedDocumentsCount = documentAssets.total;
+	const submittedAt = activeCase.submittedAt ?? null;
+	const hasSubmittedDocuments = Boolean(submittedAt);
+
 	return {
 		profile: {
 			fullName: profile?.fullName ?? user.name ?? "Cliente",
 			email: profile?.email ?? user.email,
 		},
-		case: activeCase
-			? {
-					id: activeCase.$id,
-					status: activeCase.status ?? "pending_documents",
-					progress: activeCase.progress ?? 0,
-					uploadedDocumentsCount: activeCase.uploadedDocumentsCount ?? 0,
-					pendingTasks: activeCase.pendingTasks ?? [],
-				}
-			: null,
+		case: {
+			id: activeCase.$id,
+			status: activeCase.status ?? "pending_documents",
+			progress: hasSubmittedDocuments ? 100 : 0,
+			uploadedDocumentsCount,
+			pendingTasks: hasSubmittedDocuments
+				? []
+				: ["Completa y envía tu documentación desde el formulario."],
+			submittedAt,
+			hasSubmittedDocuments,
+		},
 	};
 }
