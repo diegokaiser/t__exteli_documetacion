@@ -4,11 +4,11 @@ import { Account, Client, Users } from "node-appwrite";
 
 type Params = {
 	params: Promise<{
-		userId: string;
+		clientId: string;
 	}>;
 };
 
-export async function POST(_: Request, { params }: Params) {
+export async function POST(_request: Request, { params }: Params) {
 	const session = await getCurrentSession();
 
 	if (!session) {
@@ -19,7 +19,7 @@ export async function POST(_: Request, { params }: Params) {
 		return NextResponse.json({ message: "Forbidden" }, { status: 403 });
 	}
 
-	const { userId } = await params;
+	const { clientId } = await params;
 
 	const client = new Client()
 		.setEndpoint(process.env.APPWRITE_ENDPOINT!)
@@ -29,7 +29,7 @@ export async function POST(_: Request, { params }: Params) {
 	const users = new Users(client);
 	const account = new Account(client);
 
-	const user = await users.get({ userId });
+	const user = await users.get(clientId);
 
 	if (user.emailVerification) {
 		return NextResponse.json(
