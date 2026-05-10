@@ -12,7 +12,20 @@ type AdminSidebarProps = {
 	user: Models.User<Models.Preferences>;
 };
 
-const navigation = [
+type NavigationItem = {
+	title: string;
+	href: string;
+	icon: LucideIcon;
+};
+
+type NavigationSection =
+	| NavigationItem
+	| {
+			title: string;
+			items: NavigationItem[];
+	  };
+
+const navigation: NavigationSection[] = [
 	{
 		title: "Dashboard",
 		href: "/admin",
