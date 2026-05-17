@@ -6,6 +6,7 @@ import { getCurrentSession } from "@/lib/auth/get-current-session";
 import JSZip from "jszip";
 import { NextResponse } from "next/server";
 import { Client, Databases, Query, Storage, Users } from "node-appwrite";
+import nodemailer from "nodemailer";
 import { PDFDocument } from "pdf-lib";
 
 const PDF_MIME = "application/pdf";
@@ -54,6 +55,16 @@ function docxFilename(name: string) {
 	return `${name}.docx`;
 }
 
+function requiredEnv(name: string) {
+	const value = process.env[name];
+
+	if (!value) {
+		throw new Error(`Missing environment variable: ${name}`);
+	}
+
+	return value;
+}
+
 export async function POST(request: Request, { params }: Params) {
 	const session = await getCurrentSession();
 
@@ -75,30 +86,29 @@ export async function POST(request: Request, { params }: Params) {
 	const { caseId } = await params;
 
 	const client = new Client()
-		.setEndpoint(process.env.APPWRITE_ENDPOINT!)
-		.setProject(process.env.APPWRITE_PROJECT_ID!)
-		.setKey(process.env.APPWRITE_API_KEY!);
+		.setEndpoint(requiredEnv("APPWRITE_ENDPOINT"))
+		.setProject(requiredEnv("APPWRITE_PROJECT_ID"))
+		.setKey(requiredEnv("APPWRITE_API_KEY"));
 
 	const databases = new Databases(client);
 	const storage = new Storage(client);
 	const users = new Users(client);
 
-	const adminUser = await users.get({
-		userId: session.userId,
-	});
-
-	const adminFirstName = adminUser.name?.split(" ")[0] ?? "GESTOR";
-
-	const databaseId = process.env.APPWRITE_DATABASE_ID!;
-	const casesCollectionId = process.env.APPWRITE_CASES_COLLECTION_ID!;
-	const profilesCollectionId = process.env.APPWRITE_PROFILES_COLLECTION_ID!;
-	const submissionsCollectionId =
-		process.env.APPWRITE_DOCUMENT_SUBMISSIONS_COLLECTION_ID!;
-	const assetsCollectionId =
-		process.env.APPWRITE_DOCUMENT_ASSETS_COLLECTION_ID!;
-	const bucketId = process.env.APPWRITE_DOCUMENTS_BUCKET_ID!;
-
 	try {
+		const adminUser = await users.get(session.userId);
+		const adminFirstName = adminUser.name?.split(" ")[0] ?? "GESTOR";
+
+		const databaseId = requiredEnv("APPWRITE_DATABASE_ID");
+		const casesCollectionId = requiredEnv("APPWRITE_CASES_COLLECTION_ID");
+		const profilesCollectionId = requiredEnv("APPWRITE_PROFILES_COLLECTION_ID");
+		const submissionsCollectionId = requiredEnv(
+			"APPWRITE_DOCUMENT_SUBMISSIONS_COLLECTION_ID",
+		);
+		const assetsCollectionId = requiredEnv(
+			"APPWRITE_DOCUMENT_ASSETS_COLLECTION_ID",
+		);
+		const bucketId = requiredEnv("APPWRITE_DOCUMENTS_BUCKET_ID");
+
 		const caseDoc = await databases.getDocument(
 			databaseId,
 			casesCollectionId,
@@ -288,23 +298,47 @@ export async function POST(request: Request, { params }: Params) {
 			form,
 		});
 
-		console.log("[PREPARE_EMAIL_SUBJECT]", subject);
-		console.log("[PREPARE_EMAIL_ZIP_FILENAME]", zipFilename);
-		console.log("[PREPARE_EMAIL_BODY]", html);
-		console.log("[PREPARE_EMAIL_ZIP_SIZE_BYTES]", zipBuffer.byteLength);
+		const transporter = nodemailer.createTransport({
+			host: requiredEnv("SMTP_HOST"),
+			port: Number(requiredEnv("SMTP_PORT")),
+			secure: process.env.SMTP_SECURE === "true",
+			auth: {
+				user: requiredEnv("SMTP_USER"),
+				pass: requiredEnv("SMTP_APP_PASSWORD"),
+			},
+		});
+
+		await transporter.sendMail({
+			from: requiredEnv("SMTP_USER"),
+			to: requiredEnv("DOCUMENTS_DELIVERYEMAIL"),
+			subject,
+			html,
+			attachments: [
+				{
+					filename: zipFilename,
+					content: Buffer.from(zipBuffer),
+					contentType: "application/zip",
+				},
+			],
+		});
 
 		return NextResponse.json({
 			success: true,
+			message: "Email sent successfully",
 			subject,
 			zipFilename,
-			html,
 			zipSizeBytes: zipBuffer.byteLength,
 		});
 	} catch (error) {
 		console.error("[PREPARE_AND_SEND_ERROR]", error);
 
 		return NextResponse.json(
-			{ message: "Could not prepare documents" },
+			{
+				message:
+					error instanceof Error
+						? error.message
+						: "Could not prepare and send documents",
+			},
 			{ status: 500 },
 		);
 	}

@@ -7,7 +7,7 @@ export const prepareDocumentsSchema = z.object({
 	maritalStatus: z.string().min(1, "El estado civil es requerido"),
 	fatherName: z.string().min(1, "El nombre del padre es requerido"),
 	motherName: z.string().min(1, "El nombre de la madre es requerido"),
-	expNumber: z.string().optional(),
+	asylumExp: z.string().nullable().optional(),
 });
 
 export type PrepareDocumentsInput = z.infer<typeof prepareDocumentsSchema>;

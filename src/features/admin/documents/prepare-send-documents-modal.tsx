@@ -17,6 +17,7 @@ type PrepareSendDocumentsModalProps = {
 	defaultValues: {
 		email: string;
 		phone?: string | null;
+		asylumExp?: string | null;
 	};
 };
 
@@ -37,7 +38,7 @@ export function PrepareSendDocumentsModal({
 			maritalStatus: "",
 			fatherName: "",
 			motherName: "",
-			expNumber: "",
+			asylumExp: defaultValues.asylumExp ?? null,
 		},
 	});
 
@@ -93,7 +94,7 @@ export function PrepareSendDocumentsModal({
 							<input
 								{...form.register("address")}
 								className="mt-2 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-								placeholder="Dirección completa"
+								placeholder="Dirección completa, Portal, Piso, Puerta, Codigo Postal, Ciudad"
 							/>
 							{form.formState.errors.address && (
 								<p className="mt-1 text-sm text-red-500">
@@ -150,16 +151,18 @@ export function PrepareSendDocumentsModal({
 							)}
 						</div>
 
-						<div>
-							<label className="text-sm font-medium text-slate-700">
-								EXP
-							</label>
-							<input
-								{...form.register("expNumber")}
-								className="mt-2 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-								placeholder="Número EXP"
-							/>
-						</div>
+						{defaultValues.asylumExp != null && (
+							<div>
+								<label className="text-sm font-medium text-slate-700">
+									EXP
+								</label>
+								<input
+									{...form.register("asylumExp")}
+									className="mt-2 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+									placeholder="Número EXP"
+								/>
+							</div>
+						)}
 
 						<div>
 							<label className="text-sm font-medium text-slate-700">
@@ -206,7 +209,7 @@ export function PrepareSendDocumentsModal({
 						<button
 							type="submit"
 							disabled={mutation.isPending}
-							className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+							className="cursor-pointer inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
 						>
 							{mutation.isPending && (
 								<Loader2 className="h-4 w-4 animate-spin" />

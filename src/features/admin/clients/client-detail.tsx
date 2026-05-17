@@ -163,6 +163,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
 				defaultValues={{
 					email: data.profile.email,
 					phone: data.profile.phone,
+					asylumExp: data.case.asylumExp,
 				}}
 			/>
 		</>
