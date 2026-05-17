@@ -1,7 +1,20 @@
 import { createClientSchema } from "@/features/admin/clients/create-client.schema";
+import {
+	buildRepresentationFilename,
+	generateRepresentationDocx,
+} from "@/features/admin/documents/generate-representation-docx";
 import { getCurrentSession } from "@/lib/auth/get-current-session";
 import { NextResponse } from "next/server";
-import { Account, Client, Databases, ID, Query, Users } from "node-appwrite";
+import {
+	Account,
+	Client,
+	Databases,
+	ID,
+	Query,
+	Storage,
+	Users,
+} from "node-appwrite";
+import { InputFile } from "node-appwrite/file";
 
 export async function GET() {
 	console.log("[LIST_CLIENTS] Request received");
@@ -50,10 +63,11 @@ export async function GET() {
 				const caseDoc = casesResult.documents[0];
 
 				let documentationCount = 0;
+
 				if (caseDoc) {
 					const assetsResult = await databases.listDocuments(
 						process.env.APPWRITE_DATABASE_ID!,
-						process.env.APPWRITE_DOCUMENTS_COLLECTION_ID!,
+						process.env.APPWRITE_DOCUMENT_ASSETS_COLLECTION_ID!,
 						[Query.equal("caseId", caseDoc.$id), Query.limit(1)],
 					);
 
@@ -63,14 +77,16 @@ export async function GET() {
 				return {
 					id: profile.$id,
 					userId: profile.userId,
+					caseId: caseDoc?.$id || null,
 					firstName: profile.firstName,
 					lastName: profile.lastName,
 					fullName: profile.fullName,
 					email: profile.email,
 					status: profile.status,
+					age: profile.age,
+					genre: profile.genre,
 					emailVerification: authUser.emailVerification,
 					createdAt: profile.$createdAt,
-					caseId: caseDoc?.$id || null,
 					documentationCount,
 					documentationStatus: documentationCount > 0 ? "completed" : "pending",
 				};
@@ -142,15 +158,24 @@ export async function POST(request: Request) {
 
 	const users = new Users(client);
 	const databases = new Databases(client);
+	const storage = new Storage(client);
 	const account = new Account(client);
 
 	const databaseId = process.env.APPWRITE_DATABASE_ID!;
 	const profilesCollectionId = process.env.APPWRITE_PROFILES_COLLECTION_ID!;
 	const casesCollectionId = process.env.APPWRITE_CASES_COLLECTION_ID!;
+	const submissionsCollectionId =
+		process.env.APPWRITE_DOCUMENT_SUBMISSIONS_COLLECTION_ID!;
+	const assetsCollectionId =
+		process.env.APPWRITE_DOCUMENT_ASSETS_COLLECTION_ID!;
+	const bucketId = process.env.APPWRITE_DOCUMENTS_BUCKET_ID!;
 
 	let createdUserId: string | null = null;
 	let createdProfileId: string | null = null;
 	let createdCaseId: string | null = null;
+	let createdSubmissionId: string | null = null;
+	let createdAssetId: string | null = null;
+	let createdStorageFileId: string | null = null;
 
 	try {
 		console.log("[CREATE_CLIENT] Step 1: Creating auth user");
@@ -185,6 +210,8 @@ export async function POST(request: Request) {
 				status: "active",
 				userId: user.$id,
 				email: input.email,
+				age: input.age,
+				genre: input.genre,
 				firstName: input.firstName,
 				lastName: input.lastName,
 				fullName,
@@ -221,10 +248,89 @@ export async function POST(request: Request) {
 
 		console.log("[CREATE_CLIENT] Case created:", caseDoc.$id);
 
+		console.log("[CREATE_CLIENT] Step 5: Generating representation DOCX");
+
+		const representationBuffer = await generateRepresentationDocx(input);
+		const representationFilename = buildRepresentationFilename(input);
+
+		console.log(
+			"[CREATE_CLIENT] Representation filename:",
+			representationFilename,
+		);
+
+		console.log("[CREATE_CLIENT] Step 6: Uploading representation DOCX");
+
+		const uploadedFile = await storage.createFile({
+			bucketId,
+			fileId: ID.unique(),
+			file: InputFile.fromBuffer(representationBuffer, representationFilename),
+		});
+
+		createdStorageFileId = uploadedFile.$id;
+
+		console.log(
+			"[CREATE_CLIENT] Representation DOCX uploaded:",
+			uploadedFile.$id,
+		);
+
+		console.log("[CREATE_CLIENT] Step 7: Creating representation submission");
+
+		const representationSubmission = await databases.createDocument(
+			databaseId,
+			submissionsCollectionId,
+			ID.unique(),
+			{
+				caseId: caseDoc.$id,
+				requirementKey: "generated-representation",
+				status: "uploaded",
+				skippedByUser: false,
+				requiredAtSubmission: true,
+				adminDecision: "approved",
+				lastUpdatedAt: now,
+			},
+		);
+
+		createdSubmissionId = representationSubmission.$id;
+
+		console.log(
+			"[CREATE_CLIENT] Representation submission created:",
+			representationSubmission.$id,
+		);
+
+		console.log("[CREATE_CLIENT] Step 8: Creating representation asset");
+
+		const representationAsset = await databases.createDocument(
+			databaseId,
+			assetsCollectionId,
+			ID.unique(),
+			{
+				bucketType: "raw",
+				sizeBytes: uploadedFile.sizeOriginal,
+				kind: "generated",
+				expiresAt: null,
+				deletedAt: null,
+				appwriteFileId: uploadedFile.$id,
+				originalFilename: representationFilename,
+				storedFilename: representationFilename,
+				mimeType:
+					"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				caseId: caseDoc.$id,
+				submissionId: representationSubmission.$id,
+				uploadedByUserId: session.userId,
+			},
+		);
+
+		createdAssetId = representationAsset.$id;
+
+		console.log(
+			"[CREATE_CLIENT] Representation asset created:",
+			representationAsset.$id,
+		);
+
 		let inviteSent = false;
 
 		try {
-			console.log("[CREATE_CLIENT] Step 5: Sending invite email");
+			console.log("[CREATE_CLIENT] Step 9: Sending invite email");
 
 			const recoveryUrl = `${process.env.NEXT_PUBLIC_APP_URL}/set-password`;
 
@@ -232,7 +338,7 @@ export async function POST(request: Request) {
 
 			await account.createRecovery({
 				email: input.email,
-				url: `${process.env.NEXT_PUBLIC_APP_URL}/set-password`,
+				url: recoveryUrl,
 			});
 
 			inviteSent = true;
@@ -252,12 +358,55 @@ export async function POST(request: Request) {
 				userId: user.$id,
 				profileId: profile.$id,
 				caseId: caseDoc.$id,
+				representationSubmissionId: representationSubmission.$id,
+				representationAssetId: representationAsset.$id,
+				representationFileId: uploadedFile.$id,
 				inviteSent,
 			},
 			{ status: 201 },
 		);
 	} catch (error) {
 		console.error("[CREATE_CLIENT_ERROR] Fatal error:", error);
+
+		if (createdAssetId) {
+			console.log("[ROLLBACK] Deleting representation asset:", createdAssetId);
+
+			await databases
+				.deleteDocument(databaseId, assetsCollectionId, createdAssetId)
+				.catch((rollbackError) =>
+					console.error("[ROLLBACK_ASSET_ERROR]", rollbackError),
+				);
+		}
+
+		if (createdSubmissionId) {
+			console.log(
+				"[ROLLBACK] Deleting representation submission:",
+				createdSubmissionId,
+			);
+
+			await databases
+				.deleteDocument(
+					databaseId,
+					submissionsCollectionId,
+					createdSubmissionId,
+				)
+				.catch((rollbackError) =>
+					console.error("[ROLLBACK_SUBMISSION_ERROR]", rollbackError),
+				);
+		}
+
+		if (createdStorageFileId) {
+			console.log("[ROLLBACK] Deleting storage file:", createdStorageFileId);
+
+			await storage
+				.deleteFile({
+					bucketId,
+					fileId: createdStorageFileId,
+				})
+				.catch((rollbackError) =>
+					console.error("[ROLLBACK_STORAGE_FILE_ERROR]", rollbackError),
+				);
+		}
 
 		if (createdCaseId) {
 			console.log("[ROLLBACK] Deleting case:", createdCaseId);

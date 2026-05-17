@@ -17,7 +17,7 @@ export function WizardHelp() {
 							className="border-b border-blue-600 inline-block font-medium pb-[1px] text-blue-600 sm:border-transparent sm:hover:border-blue-600"
 							style={{ transition: "ease .35s" }}
 						>
-							iLovePDF
+							iLovePDF 👈
 						</a>
 					</p>
 				</div>

@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SplashLoader } from "@/components/shared/splash-loader";
 import { useRouter } from "next/navigation";
 import { useSubmitIntake } from "../hooks/use-submit-intake";
+import { WizardRepresentation } from "./wizard-representation";
 
 export function WizardView({
 	onBackToDashboard,
@@ -177,6 +178,8 @@ export function WizardView({
 				</div>
 
 				<WizardHelp />
+
+				<WizardRepresentation />
 
 				{stepIndex === 0 ? (
 					<WizardStepPersonal

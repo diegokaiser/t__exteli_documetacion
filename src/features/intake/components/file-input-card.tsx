@@ -55,6 +55,41 @@ function getReadableRules(field: FileConditionalField) {
 	return parts.join(" · ");
 }
 
+function isAcceptedFile(file: File, accept?: string[]) {
+	if (!accept || accept.length === 0) return true;
+
+	const fileName = file.name.toLowerCase();
+
+	return accept.some((type) => {
+		if (file.type === type) return true;
+
+		if (type === "application/pdf") {
+			return fileName.endsWith(".pdf");
+		}
+
+		if (
+			type ===
+			"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+		) {
+			return fileName.endsWith(".docx");
+		}
+
+		if (type === "application/msword") {
+			return fileName.endsWith(".doc");
+		}
+
+		if (type === "image/jpeg") {
+			return fileName.endsWith(".jpg") || fileName.endsWith(".jpeg");
+		}
+
+		if (type === "image/png") {
+			return fileName.endsWith(".png");
+		}
+
+		return false;
+	});
+}
+
 function validateFiles(field: FileConditionalField, fileList: FileList | null) {
 	if (!fileList || fileList.length === 0) {
 		return { valid: true, error: "" };
@@ -63,18 +98,11 @@ function validateFiles(field: FileConditionalField, fileList: FileList | null) {
 	const files = Array.from(fileList);
 
 	for (const file of files) {
-		if (field.accept && field.accept.length > 0) {
-			const isAccepted =
-				field.accept.includes(file.type) ||
-				(file.name?.toLowerCase().endsWith(".pdf") &&
-					field.accept.includes("application/pdf"));
-
-			if (!isAccepted) {
-				return {
-					valid: false,
-					error: "Formato no válido. Solo se acepta PDF.",
-				};
-			}
+		if (!isAcceptedFile(file, field.accept)) {
+			return {
+				valid: false,
+				error: `Formato no válido. ${getReadableAcceptedTypes(field.accept)}.`,
+			};
 		}
 
 		if (field.maxSizeMB) {
@@ -246,7 +274,19 @@ export function FileInputCard({
 							}`}
 							disabled={disabled}
 							accept={acceptValue}
-							onChange={(event) => handleFileChange(event.target.files)}
+							onChange={(event) => {
+								const validation = validateFiles(field, event.target.files);
+
+								if (!validation.valid) {
+									setError(validation.error);
+									onFilesChange?.(null);
+									event.target.value = "";
+									return;
+								}
+
+								setError("");
+								onFilesChange?.(event.target.files);
+							}}
 						/>
 
 						<p className="mt-2 text-xs text-slate-500">

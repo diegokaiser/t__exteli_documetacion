@@ -159,4 +159,9 @@ export const documentPackageRules: DocumentPackageRule[] = [
 		requirementKey: "guardian-authorization-minor",
 		outputName: "PERMISO DE APODERADO",
 	},
+	{
+		mode: "single",
+		requirementKey: "generated-representation",
+		outputName: "REPRESENTACION",
+	},
 ];

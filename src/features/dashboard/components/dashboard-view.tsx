@@ -45,6 +45,8 @@ export function DashboardView({
 	const pendingTasks = data.case?.pendingTasks ?? [];
 	const hasSubmittedDocuments = Boolean(data.case?.hasSubmittedDocuments);
 
+	console.log(data.case);
+
 	return (
 		<AppShell
 			title="Mi expediente"

@@ -113,6 +113,14 @@ export async function POST(req: Request) {
 			);
 		}
 
+		const now = new Date().toISOString();
+
+		const asylumExp = body.values["exp-number-adult-asylum"]?.trim() || null;
+
+		const vulnerability = body.documents.some(
+			(document) => document.fieldId === "vulnerability-report",
+		);
+
 		await databases.updateDocument(
 			appwriteServerConfig.databaseId,
 			appwriteServerConfig.casesCollectionId,
@@ -123,9 +131,11 @@ export async function POST(req: Request) {
 				currentStep: 7,
 				ageCategory: body.age,
 				asylumStatus: body.asylum,
+				asylumExp,
+				vulnerability,
 				draftCompleted: true,
-				lastEditedAt: new Date().toISOString(),
-				submittedAt: new Date().toISOString(),
+				lastEditedAt: now,
+				submittedAt: now,
 				updatedBy: session.userId,
 			},
 		);

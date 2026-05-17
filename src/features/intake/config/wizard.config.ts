@@ -5,6 +5,11 @@ import {
 
 const PDF_ONLY = ["application/pdf"];
 
+const PDF_OR_DOCX = [
+	"application/pdf",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 type LaborDocumentsConfig = {
 	adult: {
 		asylumYes: ConditionalField[];
@@ -26,7 +31,7 @@ export const personalDocuments: Record<"adult" | "minor", ConditionalField[]> =
 				hint: "Escanea todas las hojas, incluso si no tienen anotaciones.",
 				required: true,
 				accept: PDF_ONLY,
-				maxSizeMB: 8,
+				maxSizeMB: 4.5,
 			},
 			{
 				id: "criminal-record",
@@ -67,7 +72,7 @@ export const personalDocuments: Record<"adult" | "minor", ConditionalField[]> =
 				hint: "Escanea todas las hojas, incluso si no tienen anotaciones.",
 				required: true,
 				accept: PDF_ONLY,
-				maxSizeMB: 8,
+				maxSizeMB: 4.5,
 			},
 			{
 				id: "birth-certificate",
@@ -151,7 +156,7 @@ export const laborDocuments: LaborDocumentsConfig = {
 				hint: "Si no tienes nóminas, no pasa nada",
 				multiple: true,
 				accept: PDF_ONLY,
-				maxSizeMB: 6,
+				maxSizeMB: 4.5,
 			},
 			{
 				id: "employment-contract-adult-asylum",
@@ -267,6 +272,14 @@ export const complementaryDocuments: Record<
 > = {
 	adult: [
 		{
+			id: "generated-representation",
+			label: "Documento de representación",
+			hint: "Descarga, firma y vuelve a subir este documento.",
+			required: true,
+			accept: PDF_OR_DOCX,
+			maxSizeMB: 2,
+		},
+		{
 			id: "complementary-april-2026",
 			label: "Abril 2026",
 			hint: "Ingresa toda la documentación que tengas de ese mes, ya sean citas médicas, facturas de compras o servicios a tu nombre o envíos de dinero.",
@@ -316,6 +329,14 @@ export const complementaryDocuments: Record<
 		},
 	],
 	minor: [
+		{
+			id: "generated-representation",
+			label: "Documento de representación",
+			hint: "Descarga, firma y vuelve a subir este documento.",
+			required: true,
+			accept: PDF_OR_DOCX,
+			maxSizeMB: 2,
+		},
 		{
 			id: "guardian-documentation-minor",
 			label: "Documentación de tus apoderados",

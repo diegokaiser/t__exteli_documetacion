@@ -8,6 +8,10 @@ import { NextResponse } from "next/server";
 import { Client, Databases, Query, Storage, Users } from "node-appwrite";
 import { PDFDocument } from "pdf-lib";
 
+const PDF_MIME = "application/pdf";
+const DOCX_MIME =
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 type Params = {
 	params: Promise<{
 		caseId: string;
@@ -16,7 +20,6 @@ type Params = {
 
 async function toArrayBuffer(file: unknown): Promise<ArrayBuffer> {
 	if (file instanceof ArrayBuffer) return file;
-
 	if (file instanceof Blob) return file.arrayBuffer();
 
 	if (file instanceof Uint8Array) {
@@ -43,8 +46,12 @@ async function mergePdfBuffers(buffers: ArrayBuffer[]) {
 	return mergedPdf.save();
 }
 
-function filename(name: string) {
+function pdfFilename(name: string) {
 	return `${name}.pdf`;
+}
+
+function docxFilename(name: string) {
+	return `${name}.docx`;
 }
 
 export async function POST(request: Request, { params }: Params) {
@@ -80,7 +87,7 @@ export async function POST(request: Request, { params }: Params) {
 		userId: session.userId,
 	});
 
-	const adminFirstName = adminUser.name.split(" ")[0] ?? "GESTOR";
+	const adminFirstName = adminUser.name?.split(" ")[0] ?? "GESTOR";
 
 	const databaseId = process.env.APPWRITE_DATABASE_ID!;
 	const casesCollectionId = process.env.APPWRITE_CASES_COLLECTION_ID!;
@@ -148,7 +155,7 @@ export async function POST(request: Request, { params }: Params) {
 
 		const zip = new JSZip();
 
-		const getPdfBuffer = async (fileId: string) => {
+		const getFileBuffer = async (fileId: string) => {
 			const file = await storage.getFileDownload({
 				bucketId,
 				fileId,
@@ -160,38 +167,58 @@ export async function POST(request: Request, { params }: Params) {
 		for (const rule of documentPackageRules) {
 			if (rule.mode === "single") {
 				const assets = assetsByRequirementKey[rule.requirementKey] ?? [];
+
 				if (assets.length !== 1) continue;
 
 				const asset = assets[0];
-				if (asset.mimeType !== "application/pdf") continue;
+				const buffer = await getFileBuffer(asset.appwriteFileId);
 
-				const buffer = await getPdfBuffer(asset.appwriteFileId);
-				zip.file(filename(rule.outputName), buffer);
+				if (asset.mimeType === PDF_MIME) {
+					zip.file(pdfFilename(rule.outputName), buffer);
+					continue;
+				}
+
+				if (asset.mimeType === DOCX_MIME) {
+					zip.file(docxFilename(rule.outputName), buffer);
+					continue;
+				}
+
 				continue;
 			}
 
 			if (rule.mode === "merge-all") {
 				const assets = assetsByRequirementKey[rule.requirementKey] ?? [];
+
 				if (assets.length === 0) continue;
 
-				const pdfAssets = assets.filter(
-					(asset) => asset.mimeType === "application/pdf",
+				const pdfAssets = assets.filter((asset) => asset.mimeType === PDF_MIME);
+				const docxAssets = assets.filter(
+					(asset) => asset.mimeType === DOCX_MIME,
 				);
-
-				if (pdfAssets.length === 0) continue;
 
 				if (pdfAssets.length === 1) {
-					const buffer = await getPdfBuffer(pdfAssets[0].appwriteFileId);
-					zip.file(filename(rule.outputName), buffer);
-					continue;
+					const buffer = await getFileBuffer(pdfAssets[0].appwriteFileId);
+					zip.file(pdfFilename(rule.outputName), buffer);
 				}
 
-				const buffers = await Promise.all(
-					pdfAssets.map((asset) => getPdfBuffer(asset.appwriteFileId)),
-				);
+				if (pdfAssets.length > 1) {
+					const buffers = await Promise.all(
+						pdfAssets.map((asset) => getFileBuffer(asset.appwriteFileId)),
+					);
 
-				const mergedPdf = await mergePdfBuffers(buffers);
-				zip.file(filename(rule.outputName), mergedPdf);
+					const mergedPdf = await mergePdfBuffers(buffers);
+					zip.file(pdfFilename(rule.outputName), mergedPdf);
+				}
+
+				for (let index = 0; index < docxAssets.length; index++) {
+					const asset = docxAssets[index];
+					const buffer = await getFileBuffer(asset.appwriteFileId);
+
+					const suffix = docxAssets.length > 1 ? `-${index + 1}` : "";
+
+					zip.file(docxFilename(`${rule.outputName}${suffix}`), buffer);
+				}
+
 				continue;
 			}
 
@@ -200,20 +227,36 @@ export async function POST(request: Request, { params }: Params) {
 				const apostilleAssets =
 					assetsByRequirementKey[rule.apostilleRequirementKey] ?? [];
 
-				if (baseAssets.length === 1 && apostilleAssets.length === 1) {
+				const basePdfAssets = baseAssets.filter(
+					(asset) => asset.mimeType === PDF_MIME,
+				);
+				const apostillePdfAssets = apostilleAssets.filter(
+					(asset) => asset.mimeType === PDF_MIME,
+				);
+
+				if (basePdfAssets.length === 1 && apostillePdfAssets.length === 1) {
 					const buffers = await Promise.all([
-						getPdfBuffer(baseAssets[0].appwriteFileId),
-						getPdfBuffer(apostilleAssets[0].appwriteFileId),
+						getFileBuffer(basePdfAssets[0].appwriteFileId),
+						getFileBuffer(apostillePdfAssets[0].appwriteFileId),
 					]);
 
 					const mergedPdf = await mergePdfBuffers(buffers);
-					zip.file(filename(rule.apostilledOutputName), mergedPdf);
+					zip.file(pdfFilename(rule.apostilledOutputName), mergedPdf);
 					continue;
 				}
 
 				if (baseAssets.length === 1 && apostilleAssets.length === 0) {
-					const buffer = await getPdfBuffer(baseAssets[0].appwriteFileId);
-					zip.file(filename(rule.outputName), buffer);
+					const asset = baseAssets[0];
+					const buffer = await getFileBuffer(asset.appwriteFileId);
+
+					if (asset.mimeType === PDF_MIME) {
+						zip.file(pdfFilename(rule.outputName), buffer);
+					}
+
+					if (asset.mimeType === DOCX_MIME) {
+						zip.file(docxFilename(rule.outputName), buffer);
+					}
+
 					continue;
 				}
 			}
