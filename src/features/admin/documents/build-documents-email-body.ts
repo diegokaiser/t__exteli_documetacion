@@ -34,7 +34,7 @@ export function buildDocumentsEmailBody({
 				${row("Estado civil", form.maritalStatus)}
 				${row("Nombre del padre", form.fatherName)}
 				${row("Nombre de la madre", form.motherName)}
-				${row("EXP", form.expNumber)}
+				${row("EXP", form.asylumExp)}
 			</table>
 
 			<p style="margin-top:16px;">Saludos.</p>
