@@ -23,9 +23,9 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SplashLoader } from "@/components/shared/splash-loader";
+import { WizardRepresentation } from "@/features/intake/components/wizard-representation";
+import { useSubmitIntake } from "@/features/intake/hooks/use-submit-intake";
 import { useRouter } from "next/navigation";
-import { useSubmitIntake } from "../hooks/use-submit-intake";
-import { WizardRepresentation } from "./wizard-representation";
 
 export function WizardView({
 	onBackToDashboard,
