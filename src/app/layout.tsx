@@ -16,6 +16,9 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
 	title: "Portal documental",
 	description: "Portal de gestión documental para clientes",
+	icons: {
+		icon: "/favicon.ico",
+	},
 };
 
 export default function RootLayout({
