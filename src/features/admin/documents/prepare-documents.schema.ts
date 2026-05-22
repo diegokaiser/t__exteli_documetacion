@@ -1,6 +1,13 @@
 import { z } from "zod";
+import { allowedDocumentDeliveryEmails } from "./document-delivery-emails";
 
 export const prepareDocumentsSchema = z.object({
+	deliveryEmail: z
+		.string()
+		.email("Correo de destino inválido")
+		.refine((email) => allowedDocumentDeliveryEmails.includes(email as any), {
+			message: "Correo de destino inválido",
+		}),
 	address: z.string().min(1, "La dirección es requerida"),
 	phone: z.string().min(1, "El teléfono es requerido"),
 	email: z.string().email("Correo inválido"),

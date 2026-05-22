@@ -116,7 +116,7 @@ export function LoginForm() {
 					<Button
 						type="button"
 						disabled={isLoggingIn}
-						className="h-11 w-full rounded-2xl text-sm font-medium cursor-pointer"
+						className="cursor-pointer h-11 w-full rounded-2xl text-sm font-medium"
 						style={{ backgroundColor: colors.navy, color: "white" }}
 						onClick={handleLogin}
 					>

@@ -82,7 +82,7 @@ export async function GET() {
 					lastName: profile.lastName,
 					fullName: profile.fullName,
 					email: profile.email,
-					status: profile.status,
+					status: caseDoc?.status ?? "draft",
 					age: profile.age,
 					genre: profile.genre,
 					emailVerification: authUser.emailVerification,
@@ -207,7 +207,7 @@ export async function POST(request: Request) {
 			ID.unique(),
 			{
 				role: "client",
-				status: "active",
+				status: "submitted",
 				userId: user.$id,
 				email: input.email,
 				age: input.age,

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { documentDeliveryEmails } from "./document-delivery-emails";
 import {
 	prepareDocumentsSchema,
 	type PrepareDocumentsInput,
@@ -32,6 +33,7 @@ export function PrepareSendDocumentsModal({
 	const form = useForm<PrepareDocumentsInput>({
 		resolver: zodResolver(prepareDocumentsSchema),
 		defaultValues: {
+			deliveryEmail: documentDeliveryEmails[0].value,
 			address: "",
 			phone: defaultValues.phone ?? "",
 			email: defaultValues.email,
@@ -87,6 +89,28 @@ export function PrepareSendDocumentsModal({
 
 				<form onSubmit={onSubmit} className="space-y-5">
 					<div className="grid gap-4 md:grid-cols-2">
+						<div className="md:col-span-2">
+							<label className="text-sm font-medium text-slate-700">
+								Enviar a
+							</label>
+							<select
+								{...form.register("deliveryEmail")}
+								className="mt-2 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+							>
+								{documentDeliveryEmails.map((email) => (
+									<option key={email.value} value={email.value}>
+										{email.label} — {email.value}
+									</option>
+								))}
+							</select>
+
+							{form.formState.errors.deliveryEmail && (
+								<p className="mt-1 text-sm text-red-500">
+									{form.formState.errors.deliveryEmail.message}
+								</p>
+							)}
+						</div>
+
 						<div className="md:col-span-2">
 							<label className="text-sm font-medium text-slate-700">
 								Dirección

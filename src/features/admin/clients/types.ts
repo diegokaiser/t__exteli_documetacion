@@ -6,7 +6,7 @@ export type AdminClient = {
 	fullName: string;
 	email: string;
 	phone?: string | null;
-	status: "active" | "blocked";
+	status: "submitted" | "sent";
 	documentType?: "pasaporte" | "nie" | null;
 	documentNumber?: string | null;
 	emailVerification: boolean;

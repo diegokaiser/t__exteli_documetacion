@@ -1,11 +1,4 @@
-import {
-	FolderKanban,
-	FolderPlus,
-	LayoutDashboard,
-	LucideIcon,
-	UserPlus,
-	Users,
-} from "lucide-react";
+import { LayoutDashboard, LucideIcon, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import type { Models } from "node-appwrite";
 
@@ -47,6 +40,7 @@ const navigation: NavigationSection[] = [
 			},
 		],
 	},
+	/*
 	{
 		title: "Casos",
 		items: [
@@ -62,6 +56,7 @@ const navigation: NavigationSection[] = [
 			},
 		],
 	},
+	*/
 ];
 
 export function AdminSidebar({ user }: AdminSidebarProps) {

@@ -1,4 +1,3 @@
-// src/app/auth/set-password/page.tsx
 import { SetPasswordForm } from "@/features/auth/components/set-password-form";
 
 type SetPasswordPageProps = {

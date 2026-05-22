@@ -60,6 +60,8 @@ export function ClientsTable() {
 		);
 	}
 
+	console.log(clients);
+
 	return (
 		<section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
 			<div className="border-b border-slate-100 p-6">
@@ -91,8 +93,8 @@ export function ClientsTable() {
 						className="h-11 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
 					>
 						<option value="all">Todos los estados</option>
-						<option value="active">Activo</option>
-						<option value="blocked">Bloqueado</option>
+						<option value="sent">Enviado</option>
+						<option value="submitted">Esperando revisión</option>
 					</select>
 
 					<select
@@ -133,12 +135,14 @@ export function ClientsTable() {
 								<td className="px-6 py-4">
 									<span
 										className={
-											client.status === "active"
+											client.status === "sent"
 												? "rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700"
 												: "rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700"
 										}
 									>
-										{client.status === "active" ? "Activo" : "Bloqueado"}
+										{client.status === "sent"
+											? "Enviado a Abogada"
+											: "No enviado"}
 									</span>
 								</td>
 

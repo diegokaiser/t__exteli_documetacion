@@ -308,9 +308,20 @@ export async function POST(request: Request, { params }: Params) {
 			},
 		});
 
+		console.log("[SMTP_DEBUG]", {
+			host: process.env.SMTP_HOST,
+			port: process.env.SMTP_PORT,
+			secure: process.env.SMTP_SECURE,
+			user: process.env.SMTP_USER,
+			from: process.env.SMTP_FROM,
+			passwordLength: process.env.SMTP_APP_PASSWORD?.length,
+			passwordHasSpaces: process.env.SMTP_APP_PASSWORD?.includes(" "),
+			deliveryEmail: form.deliveryEmail,
+		});
+
 		await transporter.sendMail({
 			from: requiredEnv("SMTP_USER"),
-			to: requiredEnv("DOCUMENTS_DELIVERYEMAIL"),
+			to: form.deliveryEmail,
 			subject,
 			html,
 			attachments: [
@@ -320,6 +331,11 @@ export async function POST(request: Request, { params }: Params) {
 					contentType: "application/zip",
 				},
 			],
+		});
+
+		await databases.updateDocument(databaseId, casesCollectionId, caseId, {
+			status: "sent",
+			lastEditedAt: new Date().toISOString(),
 		});
 
 		return NextResponse.json({

@@ -120,7 +120,7 @@ export function SetPasswordForm({ userId, secret }: SetPasswordFormProps) {
 							<button
 								type="submit"
 								disabled={form.formState.isSubmitting}
-								className="h-11 w-full rounded-full bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+								className="cursor-pointer h-11 w-full rounded-full bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
 							>
 								{form.formState.isSubmitting
 									? "Creando contraseña..."
