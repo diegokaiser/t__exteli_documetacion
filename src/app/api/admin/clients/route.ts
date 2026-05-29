@@ -199,7 +199,7 @@ export async function POST(request: Request) {
 			ID.unique(),
 			{
 				role: "client",
-				status: "submitted",
+				status: "active",
 				userId: user.$id,
 				email: input.email,
 				age: input.age,
