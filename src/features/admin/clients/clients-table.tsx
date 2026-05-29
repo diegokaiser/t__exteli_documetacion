@@ -10,6 +10,7 @@ import { useResendClientInvite } from "./use-resend-client-invite";
 export function ClientsTable() {
 	const [search, setSearch] = useState("");
 	const [status, setStatus] = useState("all");
+	const [procedure, setProcedure] = useState("all");
 	const [verification, setVerification] = useState("all");
 
 	const { data = [], isLoading, isError } = useAdminClients();
@@ -114,6 +115,7 @@ export function ClientsTable() {
 					<thead className="bg-slate-50 text-xs uppercase text-slate-500">
 						<tr>
 							<th className="px-6 py-4 font-semibold">Cliente</th>
+							<th className="px-6 py-4 font-semibold">Trámite</th>
 							<th className="px-6 py-4 font-semibold">Estado</th>
 							<th className="px-6 py-4 font-semibold">Documentación</th>
 							<th className="px-6 py-4 font-semibold">Email</th>
@@ -131,6 +133,8 @@ export function ClientsTable() {
 									</p>
 									<p className="text-xs text-slate-500">{client.email}</p>
 								</td>
+
+								<td className="px-6 py-4">{client.procedure}</td>
 
 								<td className="px-6 py-4">
 									<span

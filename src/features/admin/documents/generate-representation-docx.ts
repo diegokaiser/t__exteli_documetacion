@@ -3,6 +3,7 @@ import Docxtemplater from "docxtemplater";
 import fs from "node:fs/promises";
 import path from "node:path";
 import PizZip from "pizzip";
+import { getRepresentationTramite } from "./representation-tramite.config";
 
 function getHonorific(genre: "female" | "male") {
 	return genre === "female" ? "DOÑA" : "DON";
@@ -78,6 +79,7 @@ export async function generateRepresentationDocx(input: CreateClientInput) {
 			MENOR_TIPO_DOCUMENTO: input.documentType?.toUpperCase() ?? "",
 			MENOR_NUMERO_DOCUMENTO: input.documentNumber ?? "",
 			FECHA_ACTUAL: formatSpanishDate(),
+			TRAMITE: getRepresentationTramite(input.caseName),
 		});
 	} else {
 		doc.render({
@@ -86,6 +88,7 @@ export async function generateRepresentationDocx(input: CreateClientInput) {
 			TIPO_DOCUMENTO: input.documentType?.toUpperCase() ?? "",
 			NUMERO_DOCUMENTO: input.documentNumber ?? "",
 			FECHA_ACTUAL: formatSpanishDate(),
+			TRAMITE: getRepresentationTramite(input.caseName),
 		});
 	}
 

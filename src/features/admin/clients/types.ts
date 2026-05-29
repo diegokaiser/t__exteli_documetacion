@@ -14,4 +14,5 @@ export type AdminClient = {
 	createdAt: string;
 	documentationCount: number;
 	documentationStatus: string;
+	procedure: string;
 };

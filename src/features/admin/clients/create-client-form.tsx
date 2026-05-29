@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { casesNames } from "../cases/cases-names";
 import { AdminCard } from "../components/admin-card";
 import { AdminFormField } from "../components/admin-form-field";
 import {
@@ -20,6 +21,7 @@ export function CreateClientForm() {
 	const form = useForm<CreateClientInput>({
 		resolver: zodResolver(createClientSchema),
 		defaultValues: {
+			caseName: undefined,
 			age: "adult",
 			genre: "female",
 			firstName: "",
@@ -66,6 +68,25 @@ export function CreateClientForm() {
 		<form onSubmit={onSubmit}>
 			<AdminCard title="Datos del cliente">
 				<div className="flex flex-wrap gap-4">
+					<div className="w-full sm:w-[calc(50%-12px)]">
+						<AdminFormField
+							label="Trámite"
+							error={form.formState.errors.caseName?.message}
+						>
+							<select
+								{...form.register("caseName")}
+								disabled={isSubmitting}
+								className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
+							>
+								{casesNames.map((name) => (
+									<option key={name.value} value={name.value}>
+										{name.label}
+									</option>
+								))}
+							</select>
+						</AdminFormField>
+					</div>
+
 					<div className="w-full sm:w-[calc(50%-12px)]">
 						<AdminFormField
 							label="Edad"

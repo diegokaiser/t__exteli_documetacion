@@ -3,6 +3,7 @@ import {
 	buildRepresentationFilename,
 	generateRepresentationDocx,
 } from "@/features/admin/documents/generate-representation-docx";
+import { getRepresentationTramite } from "@/features/admin/documents/representation-tramite.config";
 import { getCurrentSession } from "@/lib/auth/get-current-session";
 import { NextResponse } from "next/server";
 import {
@@ -83,6 +84,7 @@ export async function GET() {
 					fullName: profile.fullName,
 					email: profile.email,
 					status: caseDoc?.status ?? "draft",
+					procedure: caseDoc?.caseName ?? "",
 					age: profile.age,
 					genre: profile.genre,
 					emailVerification: authUser.emailVerification,
@@ -147,14 +149,10 @@ export async function POST(request: Request) {
 	const fullName = `${input.firstName} ${input.lastName}`.trim();
 	const now = new Date().toISOString();
 
-	console.log("[CREATE_CLIENT] Full name generated:", fullName);
-
 	const client = new Client()
 		.setEndpoint(process.env.APPWRITE_ENDPOINT!)
 		.setProject(process.env.APPWRITE_PROJECT_ID!)
 		.setKey(process.env.APPWRITE_API_KEY!);
-
-	console.log("[CREATE_CLIENT] Appwrite client initialized");
 
 	const users = new Users(client);
 	const databases = new Databases(client);
@@ -188,18 +186,12 @@ export async function POST(request: Request) {
 
 		createdUserId = user.$id;
 
-		console.log("[CREATE_CLIENT] Auth user created:", user.$id);
-
-		console.log("[CREATE_CLIENT] Step 2: Assigning label Cliente");
-
 		await users.updateLabels({
 			userId: user.$id,
 			labels: ["Cliente"],
 		});
 
-		console.log("[CREATE_CLIENT] Label assigned successfully");
-
-		console.log("[CREATE_CLIENT] Step 3: Creating profile");
+		console.log("[CREATE_CLIENT] Step 2: Creating profile");
 
 		const profile = await databases.createDocument(
 			databaseId,
@@ -224,9 +216,7 @@ export async function POST(request: Request) {
 
 		createdProfileId = profile.$id;
 
-		console.log("[CREATE_CLIENT] Profile created:", profile.$id);
-
-		console.log("[CREATE_CLIENT] Step 4: Creating case");
+		console.log("[CREATE_CLIENT] Step 3: Creating case");
 
 		const caseDoc = await databases.createDocument(
 			databaseId,
@@ -240,101 +230,102 @@ export async function POST(request: Request) {
 				status: "draft",
 				assignedAdminId: session.userId,
 				clientUserId: user.$id,
+				caseName: input.caseName,
 				submittedAt: null,
 			},
 		);
 
 		createdCaseId = caseDoc.$id;
 
-		console.log("[CREATE_CLIENT] Case created:", caseDoc.$id);
+		let representationSubmissionId: string | null = null;
+		let representationAssetId: string | null = null;
+		let representationFileId: string | null = null;
 
-		console.log("[CREATE_CLIENT] Step 5: Generating representation DOCX");
+		const tramite = getRepresentationTramite(input.caseName);
 
-		const representationBuffer = await generateRepresentationDocx(input);
-		const representationFilename = buildRepresentationFilename(input);
+		if (tramite) {
+			console.log("[CREATE_CLIENT] Step 4: Generating representation DOCX");
 
-		console.log(
-			"[CREATE_CLIENT] Representation filename:",
-			representationFilename,
-		);
+			const representationBuffer = await generateRepresentationDocx(input);
+			const representationFilename = buildRepresentationFilename(input);
 
-		console.log("[CREATE_CLIENT] Step 6: Uploading representation DOCX");
+			console.log(
+				"[CREATE_CLIENT] Representation filename:",
+				representationFilename,
+			);
 
-		const uploadedFile = await storage.createFile({
-			bucketId,
-			fileId: ID.unique(),
-			file: InputFile.fromBuffer(representationBuffer, representationFilename),
-		});
+			console.log("[CREATE_CLIENT] Step 5: Uploading representation DOCX");
 
-		createdStorageFileId = uploadedFile.$id;
+			const uploadedFile = await storage.createFile({
+				bucketId,
+				fileId: ID.unique(),
+				file: InputFile.fromBuffer(
+					representationBuffer,
+					representationFilename,
+				),
+			});
 
-		console.log(
-			"[CREATE_CLIENT] Representation DOCX uploaded:",
-			uploadedFile.$id,
-		);
+			createdStorageFileId = uploadedFile.$id;
+			representationFileId = uploadedFile.$id;
 
-		console.log("[CREATE_CLIENT] Step 7: Creating representation submission");
+			console.log("[CREATE_CLIENT] Step 6: Creating representation submission");
 
-		const representationSubmission = await databases.createDocument(
-			databaseId,
-			submissionsCollectionId,
-			ID.unique(),
-			{
-				caseId: caseDoc.$id,
-				requirementKey: "generated-representation",
-				status: "uploaded",
-				skippedByUser: false,
-				requiredAtSubmission: true,
-				adminDecision: "approved",
-				lastUpdatedAt: now,
-			},
-		);
+			const representationSubmission = await databases.createDocument(
+				databaseId,
+				submissionsCollectionId,
+				ID.unique(),
+				{
+					caseId: caseDoc.$id,
+					requirementKey: "generated-representation",
+					status: "uploaded",
+					skippedByUser: false,
+					requiredAtSubmission: true,
+					adminDecision: "approved",
+					lastUpdatedAt: now,
+				},
+			);
 
-		createdSubmissionId = representationSubmission.$id;
+			createdSubmissionId = representationSubmission.$id;
+			representationSubmissionId = representationSubmission.$id;
 
-		console.log(
-			"[CREATE_CLIENT] Representation submission created:",
-			representationSubmission.$id,
-		);
+			console.log("[CREATE_CLIENT] Step 7: Creating representation asset");
 
-		console.log("[CREATE_CLIENT] Step 8: Creating representation asset");
+			const representationAsset = await databases.createDocument(
+				databaseId,
+				assetsCollectionId,
+				ID.unique(),
+				{
+					bucketType: "raw",
+					sizeBytes: uploadedFile.sizeOriginal,
+					kind: "generated",
+					expiresAt: null,
+					deletedAt: null,
+					appwriteFileId: uploadedFile.$id,
+					originalFilename: representationFilename,
+					storedFilename: representationFilename,
+					mimeType:
+						"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+					caseId: caseDoc.$id,
+					submissionId: representationSubmission.$id,
+					uploadedByUserId: session.userId,
+				},
+			);
 
-		const representationAsset = await databases.createDocument(
-			databaseId,
-			assetsCollectionId,
-			ID.unique(),
-			{
-				bucketType: "raw",
-				sizeBytes: uploadedFile.sizeOriginal,
-				kind: "generated",
-				expiresAt: null,
-				deletedAt: null,
-				appwriteFileId: uploadedFile.$id,
-				originalFilename: representationFilename,
-				storedFilename: representationFilename,
-				mimeType:
-					"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-				caseId: caseDoc.$id,
-				submissionId: representationSubmission.$id,
-				uploadedByUserId: session.userId,
-			},
-		);
-
-		createdAssetId = representationAsset.$id;
-
-		console.log(
-			"[CREATE_CLIENT] Representation asset created:",
-			representationAsset.$id,
-		);
+			createdAssetId = representationAsset.$id;
+			representationAssetId = representationAsset.$id;
+		} else {
+			console.log(
+				"[CREATE_CLIENT] Representation skipped: no tramite mapping",
+				input.caseName,
+			);
+		}
 
 		let inviteSent = false;
 
 		try {
-			console.log("[CREATE_CLIENT] Step 9: Sending invite email");
+			console.log("[CREATE_CLIENT] Step 8: Sending invite email");
 
 			const recoveryUrl = `${process.env.NEXT_PUBLIC_APP_URL}/set-password`;
-
-			console.log("[CREATE_CLIENT] Recovery URL:", recoveryUrl);
 
 			await account.createRecovery({
 				email: input.email,
@@ -342,13 +333,8 @@ export async function POST(request: Request) {
 			});
 
 			inviteSent = true;
-
-			console.log("[CREATE_CLIENT] Invite email sent successfully");
 		} catch (inviteError) {
-			console.error(
-				"[CREATE_CLIENT_INVITE_ERROR] Failed sending invite:",
-				inviteError,
-			);
+			console.error("[CREATE_CLIENT_INVITE_ERROR]", inviteError);
 		}
 
 		console.log("[CREATE_CLIENT] SUCCESS");
@@ -358,9 +344,9 @@ export async function POST(request: Request) {
 				userId: user.$id,
 				profileId: profile.$id,
 				caseId: caseDoc.$id,
-				representationSubmissionId: representationSubmission.$id,
-				representationAssetId: representationAsset.$id,
-				representationFileId: uploadedFile.$id,
+				representationSubmissionId,
+				representationAssetId,
+				representationFileId,
 				inviteSent,
 			},
 			{ status: 201 },
@@ -369,8 +355,6 @@ export async function POST(request: Request) {
 		console.error("[CREATE_CLIENT_ERROR] Fatal error:", error);
 
 		if (createdAssetId) {
-			console.log("[ROLLBACK] Deleting representation asset:", createdAssetId);
-
 			await databases
 				.deleteDocument(databaseId, assetsCollectionId, createdAssetId)
 				.catch((rollbackError) =>
@@ -379,11 +363,6 @@ export async function POST(request: Request) {
 		}
 
 		if (createdSubmissionId) {
-			console.log(
-				"[ROLLBACK] Deleting representation submission:",
-				createdSubmissionId,
-			);
-
 			await databases
 				.deleteDocument(
 					databaseId,
@@ -396,8 +375,6 @@ export async function POST(request: Request) {
 		}
 
 		if (createdStorageFileId) {
-			console.log("[ROLLBACK] Deleting storage file:", createdStorageFileId);
-
 			await storage
 				.deleteFile({
 					bucketId,
@@ -409,8 +386,6 @@ export async function POST(request: Request) {
 		}
 
 		if (createdCaseId) {
-			console.log("[ROLLBACK] Deleting case:", createdCaseId);
-
 			await databases
 				.deleteDocument(databaseId, casesCollectionId, createdCaseId)
 				.catch((rollbackError) =>
@@ -419,8 +394,6 @@ export async function POST(request: Request) {
 		}
 
 		if (createdProfileId) {
-			console.log("[ROLLBACK] Deleting profile:", createdProfileId);
-
 			await databases
 				.deleteDocument(databaseId, profilesCollectionId, createdProfileId)
 				.catch((rollbackError) =>
@@ -429,8 +402,6 @@ export async function POST(request: Request) {
 		}
 
 		if (createdUserId) {
-			console.log("[ROLLBACK] Deleting auth user:", createdUserId);
-
 			await users
 				.delete({ userId: createdUserId })
 				.catch((rollbackError) =>

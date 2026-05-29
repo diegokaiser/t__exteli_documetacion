@@ -1,7 +1,11 @@
 import { z } from "zod";
+import { allowedCasesNames } from "../cases/cases-names";
 
 export const createClientSchema = z
 	.object({
+		caseName: z.enum(allowedCasesNames, {
+			message: "Selecciona el trámite",
+		}),
 		age: z.enum(["adult", "minor"], {
 			message: "Selecciona la edad",
 		}),
